@@ -45,6 +45,22 @@ test("scroll reveals features and advances the route illustration", async ({ pag
   await expect(feature).toHaveCSS("opacity", "1");
 });
 
+test("the route stays below the hero copy when the menu expands", async ({ page }) => {
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/");
+    for (const menuOpen of [false, true]) {
+      if (menuOpen) await page.getByRole("button", { name: "Open menu", exact: true }).click();
+      await expect.poll(() => page.evaluate(() => {
+        const hero = document.querySelector(".hero--home")!.getBoundingClientRect();
+        const copy = document.querySelector(".hero-copy")!.getBoundingClientRect();
+        const route = document.querySelector(".home-route")!.getBoundingClientRect();
+        return route.top >= copy.bottom && route.bottom <= hero.bottom + 1;
+      })).toBe(true);
+    }
+  }
+});
+
 test("reduced motion keeps all content readable without scroll effects", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
