@@ -14,6 +14,12 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 
     await page.keyboard.press("Escape");
     await expect(menu).toBeHidden();
     await expect(trigger).toBeFocused();
+    if (viewport.width > 900) {
+      await trigger.click();
+      await page.getByRole("navigation", { name: "Main", exact: true }).getByRole("link", { name: "Homes", exact: true }).click();
+      await expect(menu).toBeHidden();
+      await page.goto("/");
+    }
     await trigger.click();
     await page.getByRole("heading", { level: 1 }).click();
     await expect(menu).toBeHidden();

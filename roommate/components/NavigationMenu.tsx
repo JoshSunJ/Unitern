@@ -31,7 +31,7 @@ export default function NavigationMenu({ signedIn, isAdmin, verified, unreadConv
     <div className="navigation" ref={root}>
       <div className="navbar">
         <Link href="/" className="brand" aria-label="unitern home" onClick={() => setOpen(false)}><span className="brand-mark" aria-hidden="true">u</span><span>unitern</span></Link>
-        <nav className="nav-primary" aria-label="Main"><Link href="/#listings">Homes</Link><Link href="/requests">Requests</Link><Link href="/map">Area guide</Link></nav>
+        <nav className="nav-primary" aria-label="Main" onClick={() => setOpen(false)}><Link href="/#listings">Homes</Link><Link href="/requests">Requests</Link><Link href="/map">Area guide</Link></nav>
         <div className="nav-account">
           <Link className="nav-cta" href={signedIn ? "/listings/new" : "/sign-up"} onClick={() => setOpen(false)}>{signedIn ? "Post a listing" : "Get started"}<span aria-hidden="true">↗</span></Link>
           <button ref={trigger} className="menu-trigger" type="button" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} aria-controls="site-menu" onClick={() => setOpen(!open)}><span className="menu-trigger__label">Menu</span><span className="menu-trigger__icon" data-open={open} aria-hidden="true"><i /><i /></span>{unreadConversationCount > 0 && <span className="nav-unread-badge">{unreadConversationCount}</span>}</button>
