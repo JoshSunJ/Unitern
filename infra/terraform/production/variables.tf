@@ -109,6 +109,7 @@ variable "google_sign_in_enabled" {
 }
 
 variable "max_instances" {
+  # Model requests have a separate shared free-tier cap in the application.
   description = "Cost guardrail for horizontally scaled Cloud Run instances."
   type        = number
   default     = 2
@@ -117,6 +118,12 @@ variable "max_instances" {
     condition     = var.max_instances >= 1 && var.max_instances <= 10
     error_message = "max_instances must be between 1 and 10 for this launch environment."
   }
+}
+
+variable "housing_chat_enabled" {
+  description = "Enable the server-only Gemini credential for the free housing guide. Use a project with billing disabled."
+  type        = bool
+  default     = false
 }
 
 variable "deletion_protection" {
