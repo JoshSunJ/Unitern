@@ -41,6 +41,8 @@ Area questions refer to a selected pin, not an independently verified housing ad
 Nearby named amenities come from OpenStreetMap's public Overpass API, within
 1,500 meters. Numeric coordinates form a fixed, bounded query. Up to 20 named
 places are supplied, at most 3/category; duplicate/invalid records are discarded.
+A 24-second network timeout allows for the public provider queue. Map failures
+log only an HTTP status and fixed reason, never coordinates or the query.
 A bounded per-instance one-hour cache reduces requests; failures are cached for
 one minute. Source links attribute OpenStreetMap contributors.
 https://wiki.openstreetmap.org/wiki/Overpass_API

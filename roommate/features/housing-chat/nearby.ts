@@ -1,5 +1,6 @@
 import type { Coordinates } from "@/features/listings/types";
 import { distanceInMiles } from "@/features/places/distance";
+import { logOperationalError } from "@/lib/operational-log";
 
 type MapElement = {
   id?: number; type?: string; lat?: number; lon?: number;
@@ -69,21 +70,29 @@ export function normalizeNearbyPlaces(elements: MapElement[], origin: Coordinate
 export async function fetchNearbyPlaces(origin: Coordinates, fetcher: typeof fetch = fetch): Promise<NearbyResult> {
   if (!validCoordinates(origin)) return { status: "no-location", places: [], fetchedAt: null };
   const around = `around:1500,${origin.latitude.toFixed(5)},${origin.longitude.toFixed(5)}`;
-  const query = `[out:json][timeout:10];(nwr(${around})[name][amenity~"^(restaurant|cafe|fast_food|bar|pub|library|cinema|pharmacy)$"];nwr(${around})[name][shop~"^(supermarket|convenience)$"];nwr(${around})[name][leisure~"^(park|fitness_centre)$"];nwr(${around})[name][railway~"^(station|tram_stop)$"];);out center 1000;`;
+  const query = `[out:json][timeout:18];(nwr(${around})[name][amenity~"^(restaurant|cafe|fast_food|bar|pub|library|cinema|pharmacy)$"];nwr(${around})[name][shop~"^(supermarket|convenience)$"];nwr(${around})[name][leisure~"^(park|fitness_centre)$"];nwr(${around})[name][railway~"^(station|tram_stop)$"];);out center 1000;`;
+  let providerStatus: number | undefined;
+  let reason = "network";
   try {
     const url = new URL("https://overpass-api.de/api/interpreter");
     url.searchParams.set("data", query);
     const response = await fetcher(url, {
       headers: { Accept: "application/json", "User-Agent": "Unitern/1.0 housing-location-assistant" },
-      signal: AbortSignal.timeout(12_000), cache: "no-store",
+      // Leave room for the provider queue while keeping map + AI under Cloud Run's 60s limit.
+      signal: AbortSignal.timeout(24_000), cache: "no-store",
     });
+    providerStatus = response.status;
+    reason = "http-error";
     if (!response.ok) throw new Error("Map unavailable");
+    reason = "invalid-response";
     const raw = await response.text();
     if (raw.length > 1_000_000) throw new Error("Map response too large");
     const data = JSON.parse(raw) as { elements?: MapElement[]; remark?: string };
-    if (!Array.isArray(data.elements) || data.remark) throw new Error("Incomplete map response");
+    if (!Array.isArray(data.elements) || data.remark) { reason = "incomplete-response"; throw new Error("Incomplete map response"); }
     return { status: "available", places: normalizeNearbyPlaces(data.elements, origin), fetchedAt: new Date().toISOString() };
-  } catch {
+  } catch (error) {
+    logOperationalError("housing_chat.map_unavailable", { providerStatus,
+      reason: error instanceof Error && error.name === "TimeoutError" ? "timeout" : reason });
     return { status: "unavailable", places: [], fetchedAt: null };
   }
 }
