@@ -1,10 +1,13 @@
 import Link from "next/link";
 import SignInForm from "@/components/SignInForm";
+import GoogleSignInButton from "@/components/GoogleSignInButton";
+import { googleSignInEnabled, safeSignInDestination } from "@/features/google-auth/config";
 
-type Props = { searchParams: Promise<{ reset?: string }> };
+type Props = { searchParams: Promise<{ reset?: string; next?: string; error?: string }> };
 
 export default async function SignInPage({ searchParams }: Props) {
-  const { reset } = await searchParams;
+  const { reset, next, error } = await searchParams;
+  const destination = safeSignInDestination(next);
 
   return (
     <main className="page-shell auth-page">
@@ -14,7 +17,9 @@ export default async function SignInPage({ searchParams }: Props) {
       <p className="form-intro">
         {reset ? "Password changed. Sign in with your new password." : "Access your listings and post a new home."}
       </p>
-      <SignInForm />
+      {error && <p className="form-error" role="alert">Google sign-in did not finish. Please try again with a verified Gmail or Google Workspace account.</p>}
+      {googleSignInEnabled() && <GoogleSignInButton destination={destination} />}
+      <SignInForm destination={destination} />
     </main>
   );
 }

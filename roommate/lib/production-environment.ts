@@ -77,6 +77,9 @@ export function validateProductionEnvironment(
   }
 
   const authUrl = parseHttpsUrl(value(environment, "AUTH_URL"), "AUTH_URL", issues);
+  if (Boolean(value(environment, "AUTH_GOOGLE_ID")) !== Boolean(value(environment, "AUTH_GOOGLE_SECRET"))) {
+    issues.push("Set both AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET to enable Google sign-in.");
+  }
 
   if (authUrl) {
     try {

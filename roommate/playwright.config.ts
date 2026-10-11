@@ -25,6 +25,8 @@ export default defineConfig({
       AUTH_URL: "http://localhost:3000",
       AUTH_SECRET: process.env.AUTH_SECRET || "e2e-only-secret-with-at-least-32-characters",
       EMAIL_PROVIDER: "preview",
+      AUTH_GOOGLE_ID: "unitern-browser-test.apps.googleusercontent.com",
+      AUTH_GOOGLE_SECRET: "local-browser-test-only",
       ADMIN_EMAIL: "marketplace-owner@e2e.unitern.local",
       NEXT_PUBLIC_MAPTILER_KEY: "",
       NEXT_PUBLIC_MAP_STYLE_URL: "http://localhost:3000/test-map-style.json",

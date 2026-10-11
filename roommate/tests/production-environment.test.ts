@@ -69,3 +69,7 @@ test("custom S3 endpoints require an explicit credential pair", () => {
     /Set both S3_ACCESS_KEY_ID[\s\S]*custom endpoint requires both access-key variables/,
   );
 });
+
+test("production rejects an incomplete Google credential pair", () => {
+  assert.throws(() => validateProductionEnvironment({ ...validEnvironment, AUTH_GOOGLE_ID: "client.apps.googleusercontent.com" }), /Set both AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET/);
+});

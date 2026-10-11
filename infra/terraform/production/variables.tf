@@ -102,6 +102,12 @@ variable "road_routing_enabled" {
   default     = false
 }
 
+variable "google_sign_in_enabled" {
+  description = "Expose the server-only Google OAuth client credentials for verified-email sign-in."
+  type        = bool
+  default     = false
+}
+
 variable "max_instances" {
   description = "Cost guardrail for horizontally scaled Cloud Run instances."
   type        = number

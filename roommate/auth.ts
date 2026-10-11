@@ -1,14 +1,17 @@
 import { compare } from "bcryptjs";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
 import { z } from "zod";
 
 import {
   enforceRateLimit,
   requestNetworkIdentifier,
 } from "@/features/security/rate-limit";
-import { logOperationalInfo } from "@/lib/operational-log";
+import { logOperationalInfo, logOperationalError } from "@/lib/operational-log";
 import prisma from "@/lib/prisma";
+import { googleSignInEnabled } from "@/features/google-auth/config";
+import { resolveGoogleUser } from "@/features/google-auth/service";
 
 const credentialsSchema = z.object({
   email: z.string().email(),
@@ -17,6 +20,7 @@ const credentialsSchema = z.object({
 
 export const { auth, handlers } = NextAuth({
   providers: [
+    ...(googleSignInEnabled() ? [Google({ checks: ["pkce", "state", "nonce"] })] : []),
     Credentials({
       credentials: {
         email: { label: "Email", type: "email" },
@@ -76,13 +80,32 @@ export const { auth, handlers } = NextAuth({
   ],
   pages: {
     signIn: "/sign-in",
+    error: "/sign-in",
   },
   session: {
     strategy: "jwt",
   },
   callbacks: {
+    async signIn({ user, account, profile }) {
+      if (account?.provider !== "google") return true;
+      try {
+        const localUser = await resolveGoogleUser(profile);
+        if (!localUser) return false;
+        Object.assign(user, {
+          id: String(localUser.id),
+          name: localUser.name,
+          email: localUser.email,
+          sessionVersion: localUser.sessionVersion,
+        });
+        return true;
+      } catch {
+        logOperationalError("auth.google_sign_in.failed");
+        return false;
+      }
+    },
     async jwt({ token, user }) {
       if (user) {
+        token.sub = user.id;
         token.sessionVersion = (user as typeof user & { sessionVersion: number }).sessionVersion;
         return token;
       }
@@ -99,6 +122,10 @@ export const { auth, handlers } = NextAuth({
       });
 
       return currentUser?.sessionVersion === sessionVersion ? token : null;
+    },
+    async session({ session, token }) {
+      session.user.id = token.sub!;
+      return session;
     },
   },
 });

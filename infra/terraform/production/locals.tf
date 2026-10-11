@@ -14,9 +14,13 @@ locals {
     S3_SECRET_ACCESS_KEY = "unitern-r2-secret-access-key"
   }
 
-  optional_secret_environment = var.road_routing_enabled ? {
-    MAPBOX_ACCESS_TOKEN = "unitern-mapbox-access-token"
-  } : {}
+  optional_secret_environment = merge(
+    var.road_routing_enabled ? { MAPBOX_ACCESS_TOKEN = "unitern-mapbox-access-token" } : {},
+    var.google_sign_in_enabled ? {
+      AUTH_GOOGLE_ID     = "unitern-google-client-id"
+      AUTH_GOOGLE_SECRET = "unitern-google-client-secret"
+    } : {},
+  )
 
   secret_environment = merge(
     local.required_secret_environment,
@@ -36,4 +40,3 @@ locals {
     UNITERN_VALIDATE_RUNTIME_ENV = "true"
   }
 }
-

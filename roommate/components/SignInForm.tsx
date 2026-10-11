@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export default function SignInForm() {
+export default function SignInForm({ destination = "/dashboard" }: { destination?: string }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -14,20 +14,25 @@ export default function SignInForm() {
     setError("");
     setIsSubmitting(true);
 
-    const result = await signIn("credentials", {
-      email: formData.get("email"),
-      password: formData.get("password"),
-      redirect: false,
-    });
+    try {
+      const result = await signIn("credentials", {
+        email: formData.get("email"),
+        password: formData.get("password"),
+        redirect: false,
+      });
 
-    if (result?.error) {
-      setError("Email, password, or verification status is incorrect.");
+      if (result?.error) {
+        setError("Email, password, or verification status is incorrect.");
+        return;
+      }
+
+      router.push(destination);
+      router.refresh();
+    } catch {
+      setError("Could not sign in. Please check your connection and try again.");
+    } finally {
       setIsSubmitting(false);
-      return;
     }
-
-    router.push("/dashboard");
-    router.refresh();
   }
 
   return (

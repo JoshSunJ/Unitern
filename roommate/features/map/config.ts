@@ -1,4 +1,5 @@
 import type { StyleSpecification } from "maplibre-gl";
+import { normalizeEnvironmentValue } from "@/lib/environment-value";
 
 const developmentRasterStyle: StyleSpecification = {
   version: 8,
@@ -24,20 +25,7 @@ export function createMapTilerStyleUrl(apiKey: string): string {
   return styleUrl.toString();
 }
 
-export function normalizePublicEnvValue(value: string | undefined): string | undefined {
-  const trimmedValue = value?.trim();
-  if (!trimmedValue) return undefined;
-
-  const firstCharacter = trimmedValue.at(0);
-  const lastCharacter = trimmedValue.at(-1);
-  const isWrappedInMatchingQuotes =
-    (firstCharacter === '"' && lastCharacter === '"') ||
-    (firstCharacter === "'" && lastCharacter === "'");
-
-  if (!isWrappedInMatchingQuotes) return trimmedValue;
-
-  return trimmedValue.slice(1, -1).trim() || undefined;
-}
+export const normalizePublicEnvValue = normalizeEnvironmentValue;
 
 export function addMapTilerKey(styleUrl: string, apiKey: string | undefined): string {
   if (!apiKey) return styleUrl;

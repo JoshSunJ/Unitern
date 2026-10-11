@@ -2,6 +2,7 @@ import type {
   LocationSearchInput,
   LocationSearchResult,
 } from "@/features/location-search/types";
+import { normalizeEnvironmentValue } from "@/lib/environment-value";
 
 type MapTilerFeature = {
   id?: string;
@@ -24,7 +25,7 @@ export function buildMapTilerSearchUrl(
   const url = new URL(
     `https://api.maptiler.com/geocoding/${encodeURIComponent(input.query)}.json`,
   );
-  url.searchParams.set("key", apiKey);
+  url.searchParams.set("key", normalizeEnvironmentValue(apiKey) ?? "");
   url.searchParams.set("country", "us");
   url.searchParams.set("language", "en");
   url.searchParams.set("worldview", "us");
