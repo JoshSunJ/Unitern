@@ -20,6 +20,7 @@ locals {
       AUTH_GOOGLE_ID     = "unitern-google-client-id"
       AUTH_GOOGLE_SECRET = "unitern-google-client-secret"
     } : {},
+    var.housing_chat_enabled ? { GEMINI_API_KEY = "unitern-gemini-api-key" } : {},
   )
 
   secret_environment = merge(

@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import Footer from "@/components/Footer";
+import HousingChat from "@/components/HousingChat";
+import { Suspense } from "react";
 import "./globals.css";
 import "./design.css";
+import "./housing-chat.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 const figtree = localFont({
@@ -35,6 +38,7 @@ export default function RootLayout({
       <body id="top" className={`${figtree.variable} ${garamond.variable}`}>
         {children}
         <Footer />
+        <Suspense fallback={null}><HousingChat /></Suspense>
       </body>
     </html>
   );

@@ -1,0 +1,65 @@
+.housing-chat { position: relative; z-index: 60; }
+.housing-chat__launcher { position: fixed; right: 24px; bottom: max(24px, env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 9px; min-height: 48px; border: 1.5px solid var(--ink); border-radius: 999px; padding: 12px 19px; background: #e6d2f5; color: var(--ink); box-shadow: 0 3px 0 var(--ink), 0 8px 24px rgb(32 33 28 / 12%); font: 600 14px var(--font-interface), sans-serif; cursor: pointer; }
+.housing-chat__launcher > span:first-child { font-size: 22px; line-height: 1; }
+.housing-chat__launcher:hover { background: #dcc1ef; }
+.housing-chat__panel { position: fixed; right: 24px; bottom: 88px; width: min(420px, calc(100% - 32px)); max-height: min(740px, calc(100dvh - 112px)); display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--ink); border-radius: 18px; background: #fffff2; box-shadow: 0 8px 0 rgb(32 33 28 / 5%), 0 16px 50px rgb(32 33 28 / 18%); color: var(--ink); font-size: 14px; line-height: 1.5; }
+.housing-chat button, .housing-chat input, .housing-chat select, .housing-chat textarea { font-family: var(--font-interface), sans-serif; }
+.housing-chat button:disabled { opacity: .45; cursor: not-allowed; }
+.housing-chat__header { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 17px 20px 12px; background: #f1e8f8; border-bottom: 1px solid var(--line); }
+.housing-chat__header .eyebrow { margin: 0 0 3px; font-size: 10px; }
+.housing-chat__header .eyebrow span { border: 1px solid var(--line); border-radius: 4px; padding: 1px 4px; margin-left: 4px; }
+.housing-chat__header h2 { margin: 0; font-family: var(--font-editorial), Georgia, serif; font-size: 31px; font-weight: 400; letter-spacing: -.04em; line-height: 1.1; }
+.housing-chat__icon { flex: none; border: 0; border-radius: 50%; width: 38px; height: 38px; background: transparent; font-size: 26px; cursor: pointer; }
+.housing-chat__icon:hover { background: rgb(32 33 28 / 7%); }
+.housing-chat__body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain; }
+.housing-chat__context { flex: none; position: relative; z-index: 2; padding: 12px 20px; border-bottom: 1px solid var(--line); }
+.housing-chat__context > label { display: block; font-size: 10px; letter-spacing: .06em; margin-bottom: 5px; color: var(--ink-muted); }
+.housing-chat__context select { width: 100%; padding: 8px 30px 8px 10px; background: white; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font-size: 12px; }
+.housing-chat__context > p { margin: 6px 0 0; font-size: 12px; color: var(--ink-muted); }
+.housing-chat__area { margin: 9px 0 0; padding: 0; border: 0; min-width: 0; }
+.housing-chat__area .location-search > label { font-size: 11px; }
+.housing-chat__area .location-search__field input { min-height: 38px; font-size: 12px; padding-block: 8px; font-weight: 500; }
+.housing-chat__area .location-search__results { max-height: 190px; overflow-y: auto; }
+.housing-chat__log { flex: 1 1 auto; min-height: 100px; overflow-y: auto; overscroll-behavior: contain; padding: 16px 20px; }
+.housing-chat__welcome { padding: 5px 0 6px; }
+.housing-chat__spark { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 9px; background: #e6eddb; font-size: 22px; }
+.housing-chat__welcome h3 { margin: 10px 0 5px; font: 400 25px/1.12 var(--font-editorial), Georgia, serif; letter-spacing: -.03em; }
+.housing-chat__welcome > p { color: var(--ink-muted); margin: 0 0 14px; font-size: 13px; }
+.housing-chat__starters { display: flex; flex-wrap: wrap; gap: 7px; }
+.housing-chat__starters button { border: 1px solid var(--line); border-radius: 7px; padding: 7px 9px; color: var(--ink); background: white; font-size: 11px; cursor: pointer; }
+.housing-chat__starters button:hover { background: #f1e8f8; }
+.housing-chat__message { margin: 0 0 16px; border-radius: 12px; padding: 12px 13px; background: #f3f4e9; overflow-wrap: anywhere; }
+.housing-chat__message--user { margin-left: 30px; background: #eee4f7; }
+.housing-chat__speaker { font-size: 9px; letter-spacing: .08em; color: var(--ink-muted); }
+.housing-chat__message > p { margin: 5px 0 0; white-space: pre-wrap; }
+.housing-chat__sources { margin: 10px 0 0; padding: 8px 0 0; list-style: none; border-top: 1px solid var(--line); }
+.housing-chat__sources li + li { margin-top: 5px; }
+.housing-chat__sources a { font-size: 11px; text-decoration: underline; text-underline-offset: 2px; }
+.housing-chat__message small { display: block; margin-top: 10px; color: var(--ink-muted); }
+.housing-chat__thinking { margin: 0; color: var(--ink-muted); font-size: 12px; }
+.housing-chat__notice { flex: none; padding: 10px 20px; border-top: 1px solid var(--line); color: var(--ink-muted); font-size: 10px; }
+.housing-chat__notice p { margin: 0 0 8px; }
+.housing-chat__notice a { text-decoration: underline; }
+.housing-chat__notice label { display: flex; align-items: flex-start; gap: 7px; font-size: 11px; color: var(--ink); }
+.housing-chat__notice input { margin-top: 2px; accent-color: var(--ink); }
+.housing-chat__notice summary { cursor: pointer; }
+.housing-chat__notice details[open] p { margin-top: 8px; }
+.housing-chat__notice details button { background: none; border: 0; padding: 0; font-size: 11px; text-decoration: underline; cursor: pointer; }
+.housing-chat__form { flex: none; display: flex; align-items: flex-end; gap: 8px; margin: 0 12px; padding: 8px; border: 1px solid var(--line); border-radius: 12px; background: white; }
+.housing-chat__form textarea { flex: 1; min-width: 0; resize: none; border: 0; padding: 4px; background: transparent; color: var(--ink); font-size: 14px; line-height: 1.4; outline-offset: 1px; }
+.housing-chat__form > button { flex: none; width: 38px; height: 38px; border: 1px solid var(--ink); border-radius: 9px; background: #e6d2f5; font-size: 22px; color: var(--ink); cursor: pointer; }
+.housing-chat__status { flex: none; padding: 8px 20px 11px; font-size: 9px; color: var(--ink-muted); }
+.housing-chat__sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (max-width: 540px) {
+  .housing-chat__launcher { right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); padding: 11px 15px; font-size: 12px; }
+  .housing-chat__panel { right: 8px; bottom: 78px; width: calc(100% - 16px); max-height: calc(100dvh - 94px); }
+  .housing-chat__header { padding: 12px 15px; }
+  .housing-chat__context { padding: 9px 15px; }
+  .housing-chat__log { padding: 12px 15px; }
+  .housing-chat__notice { padding: 8px 15px; }
+  .housing-chat__form textarea { font-size: 16px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .housing-chat__panel { animation: housing-chat-in .18s ease-out; }
+  @keyframes housing-chat-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+}
