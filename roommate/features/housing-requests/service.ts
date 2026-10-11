@@ -44,6 +44,8 @@ export async function getHousingRequests(): Promise<HousingRequest[]> {
 }
 
 export async function getHousingRequestById(id: number): Promise<HousingRequest | undefined> {
+  // URL input must fit the positive PostgreSQL integer primary key.
+  if (!Number.isInteger(id) || id <= 0 || id > 2_147_483_647) return undefined;
   return toHousingRequest(
     await prisma.housingRequest.findUnique({
       ...requestWithOwner,
