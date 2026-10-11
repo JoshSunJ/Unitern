@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/prepare-map-worker.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/prepare-map-worker.mjs",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",

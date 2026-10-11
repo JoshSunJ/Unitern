@@ -12,7 +12,7 @@ import Map, {
   type MapRef,
 } from "react-map-gl/maplibre";
 
-import { mapStyle } from "@/features/map/config";
+import { mapStyle } from "@/features/map/client-config";
 import type { CommuteRoute } from "@/features/commute/types";
 import type { Coordinates, Listing } from "@/features/listings/types";
 import type { Place } from "@/features/places/types";

@@ -50,3 +50,6 @@ next-env.d.ts
 # Local development uploads. Keep the directory, not user-provided binaries.
 /public/uploads/listings/*
 !/public/uploads/listings/.gitkeep
+
+# Generated from the installed, locked MapLibre version before dev/build.
+/public/maplibre/
