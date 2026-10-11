@@ -18,6 +18,12 @@ type MapTilerFeature = {
 
 type MapTilerResponse = { features?: MapTilerFeature[] };
 
+export class LocationSearchProviderError extends Error {
+  constructor(readonly status: number) {
+    super(`MapTiler search failed with status ${status}.`);
+  }
+}
+
 export function buildMapTilerSearchUrl(
   input: LocationSearchInput,
   apiKey: string,
@@ -119,7 +125,7 @@ export async function searchLocations(
   });
 
   if (!response.ok) {
-    throw new Error(`MapTiler search failed with status ${response.status}.`);
+    throw new LocationSearchProviderError(response.status);
   }
 
   const data = await response.json() as MapTilerResponse;

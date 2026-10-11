@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 
-import { searchLocations } from "@/features/location-search/service";
+import { LocationSearchProviderError, searchLocations } from "@/features/location-search/service";
 import type { LocationSearchKind } from "@/features/location-search/types";
 import { normalizeEnvironmentValue } from "@/lib/environment-value";
 import { logOperationalError } from "@/lib/operational-log";
@@ -70,8 +70,11 @@ export async function GET(request: NextRequest) {
     }, apiKey, process.env.AUTH_URL ? new URL(process.env.AUTH_URL).origin : request.nextUrl.origin);
 
     return Response.json({ results });
-  } catch {
-    logOperationalError("location_search.failed", { kind: requestedKind });
+  } catch (error) {
+    logOperationalError("location_search.failed", {
+      kind: requestedKind,
+      providerStatus: error instanceof LocationSearchProviderError ? error.status : undefined,
+    });
     return Response.json(
       { error: "The location provider could not complete this search." },
       { status: 502 },
