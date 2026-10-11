@@ -1,7 +1,7 @@
 project_id             = "unitern-production"
 environment_name       = "production"
 region                 = "us-west1"
-github_repository      = "JoshSunJ/roommate-finder"
+github_repository      = "JoshSunJ/Unitern"
 admin_email            = "your-real-admin-address@example.com"
 email_from             = "Unitern <accounts@your-verified-domain.example>"
 r2_bucket              = "unitern-listing-photos"

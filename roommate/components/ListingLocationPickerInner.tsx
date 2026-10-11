@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import Map, { Marker, NavigationControl, type MapRef } from "react-map-gl/maplibre";
 
-import { mapStyle } from "@/features/map/config";
+import { mapStyle } from "@/features/map/client-config";
 import type { Coordinates } from "@/features/listings/types";
 
 type Props = {

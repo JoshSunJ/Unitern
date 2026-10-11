@@ -9,6 +9,13 @@ Budget thresholds measure gross usage before promotional or free-trial credits.
 This makes staging costs visible during a trial; the budget is an alerting
 guardrail, not an automatic spending cap.
 
+Recurring database readiness checks are enabled by default for production and
+disabled for staging. A readiness request queries Neon; frequent external checks
+keep its compute awake even when no users visit the app. Staging keeps Cloud
+Run's startup and liveness probes, while idle database compute can suspend.
+Set `enable_uptime_check = true` to opt a staging environment into continuous
+availability monitoring, or `false` to disable it explicitly.
+
 The same declarations create `staging` and `production`, but each environment
 must use a separate Google Cloud project, database, R2 bucket, GitHub
 environment, and Terraform state prefix. Reusing code gives both environments
@@ -81,9 +88,10 @@ promoting a revision.
 ## Ownership boundary
 
 Terraform owns service configuration, IAM, scaling, probes, and secrets. The
-release workflow owns only the container image promoted into the service. The
-Terraform lifecycle rule ignores image changes so a successful deployment does
-not appear as infrastructure drift on the next plan.
+release workflow owns the promoted container image, revision provenance labels,
+and deployment-client metadata. The Terraform lifecycle rule ignores these
+release changes so a successful deployment does not cause an unnecessary new
+revision on the next infrastructure apply.
 
 ## GitHub deployment variables
 
@@ -112,3 +120,8 @@ required reviewer on `production` when the repository plan supports it. Staging
 deploys automatically after a merge, while production runs only through the
 manual **Deploy production** workflow. See `docs/release-runbook.md` for the
 complete bootstrap, release, rollback, and failure-triage procedure.
+
+After renaming the GitHub repository, update `github_repository` in the
+environment's untracked inputs and apply Terraform before the next release.
+Both the workload-identity provider condition and service-account binding match
+the exact repository name; GitHub URL redirects do not update the OIDC claim.

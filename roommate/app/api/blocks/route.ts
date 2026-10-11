@@ -6,8 +6,8 @@ const blockSchema = z.object({ blockedUserId: z.number().int().positive() });
 
 async function readUsers(request: Request) {
   const currentUser = await getCurrentUser();
-  const parsed = blockSchema.safeParse(await request.json());
   if (!currentUser) return { error: Response.json({ error: "Sign in to manage blocks." }, { status: 401 }) };
+  const parsed = blockSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success || parsed.data.blockedUserId === currentUser.id) return { error: Response.json({ error: "Choose a valid user." }, { status: 400 }) };
   return { currentUser, blockedUserId: parsed.data.blockedUserId };
 }

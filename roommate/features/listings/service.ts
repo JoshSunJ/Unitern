@@ -58,6 +58,8 @@ export async function getListings(filters: ListingFilters = {}): Promise<Listing
 }
 
 export async function getListingById(id: number): Promise<Listing | undefined> {
+  // URL input must fit the positive PostgreSQL integer primary key.
+  if (!Number.isInteger(id) || id <= 0 || id > 2_147_483_647) return undefined;
   return toListing(await prisma.listing.findUnique({
     ...listingWithOwner,
     where: { id },

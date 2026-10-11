@@ -86,7 +86,7 @@ jobs:
         run: npm ci
 
       - name: Audit production and development dependencies
-        run: npm audit --audit-level=high
+        run: npm run audit:dependencies
 
       - name: Rebuild schema from committed migrations
         run: npm run db:deploy

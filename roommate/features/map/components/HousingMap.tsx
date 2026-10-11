@@ -9,7 +9,7 @@ import Map, {
   type MapRef,
 } from "react-map-gl/maplibre";
 
-import { mapStyle } from "@/features/map/config";
+import { mapStyle } from "@/features/map/client-config";
 import {
   toListingFeatureCollection,
   type ListingMapProperties,

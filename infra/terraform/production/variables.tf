@@ -29,7 +29,7 @@ variable "service_name" {
 variable "github_repository" {
   description = "GitHub repository in owner/name form allowed to deploy."
   type        = string
-  default     = "JoshSunJ/roommate-finder"
+  default     = "JoshSunJ/Unitern"
 }
 
 variable "container_image" {
@@ -42,6 +42,12 @@ variable "deploy_application" {
   description = "Create Cloud Run only after an image and every required secret version exist."
   type        = bool
   default     = false
+}
+
+variable "enable_uptime_check" {
+  description = "Enable recurring database readiness checks. Defaults to production only so idle staging databases can suspend."
+  type        = bool
+  default     = null
 }
 
 variable "app_url" {

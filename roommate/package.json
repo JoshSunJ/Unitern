@@ -3,16 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/prepare-map-worker.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/prepare-map-worker.mjs",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
+    "audit:dependencies": "tsx scripts/audit-dependencies.ts",
     "test": "tsx --test tests/*.test.ts",
     "test:integration": "tsx --test tests/integration/*.test.ts",
     "test:e2e": "playwright test",
     "smoke:production": "tsx scripts/smoke-production.ts",
     "release:validate:cloud": "tsx scripts/validate-cloud-release.ts",
-    "release:check": "npm run lint && npm test && npm run test:integration && npm run test:e2e && npm run build",
+    "release:check": "npm run audit:dependencies && npm run lint && npm test && npm run test:integration && npm run test:e2e && npm run build",
     "security:prune-rate-limits": "tsx scripts/prune-rate-limits.ts",
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
@@ -36,13 +39,13 @@
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
     "maplibre-gl": "^6.4.1",
-    "next": "16.3.1",
+    "next": "16.3.8",
     "next-auth": "^5.0.0-beta.32",
     "pg": "^8.22.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-map-gl": "^8.1.2",
-    "sharp": "^0.35.4",
+    "sharp": "^0.35.5",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -55,7 +58,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.3.1",
+    "eslint-config-next": "16.3.8",
     "prisma": "7.9.1",
     "tailwindcss": "^4",
     "tsx": "^4.23.1",
@@ -63,14 +66,15 @@
   },
   "overrides": {
     "deepmerge-ts": "8.0.0",
-    "fast-uri": "3.1.7",
-    "js-yaml": "4.3.1",
+    "fast-uri": "3.1.8",
+    "js-yaml": "4.3.2",
+    "source-map-js": "1.2.2",
     "mysql2": "3.24.3",
     "minimatch@3.1.5": {
-      "brace-expansion": "1.1.18"
+      "brace-expansion": "1.1.21"
     },
     "minimatch@10.2.5": {
-      "brace-expansion": "5.0.9"
+      "brace-expansion": "5.0.12"
     }
   }
 }

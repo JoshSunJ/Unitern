@@ -7,18 +7,18 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const parsed = listingInputSchema.safeParse(await request.json());
-  if (!parsed.success) return Response.json(
-    { error: parsed.error.issues[0]?.message ?? "Provide valid listing details." },
-    { status: 400 },
-  );
-
   const currentUser = await getCurrentUser();
 
   if (!currentUser) {
     return Response.json({ error: "Sign in to post a listing." }, { status: 401 });
   }
   if (!isVerifiedUser(currentUser)) return Response.json({ error: "Verify your affiliation before posting a listing." }, { status: 403 });
+
+  const parsed = listingInputSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return Response.json(
+    { error: parsed.error.issues[0]?.message ?? "Provide valid listing details." },
+    { status: 400 },
+  );
 
   return Response.json(await createListing(parsed.data, currentUser), { status: 201 });
 }
