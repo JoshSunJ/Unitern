@@ -29,7 +29,7 @@ variable "service_name" {
 variable "github_repository" {
   description = "GitHub repository in owner/name form allowed to deploy."
   type        = string
-  default     = "JoshSunJ/roommate-finder"
+  default     = "JoshSunJ/Unitern"
 }
 
 variable "container_image" {

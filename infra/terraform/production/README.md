@@ -120,3 +120,8 @@ required reviewer on `production` when the repository plan supports it. Staging
 deploys automatically after a merge, while production runs only through the
 manual **Deploy production** workflow. See `docs/release-runbook.md` for the
 complete bootstrap, release, rollback, and failure-triage procedure.
+
+After renaming the GitHub repository, update `github_repository` in the
+environment's untracked inputs and apply Terraform before the next release.
+Both the workload-identity provider condition and service-account binding match
+the exact repository name; GitHub URL redirects do not update the OIDC claim.
