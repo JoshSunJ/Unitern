@@ -12,7 +12,7 @@ const reportSchema = z.object({
 export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) return Response.json({ error: "Sign in to submit a report." }, { status: 401 });
-  const parsed = reportSchema.safeParse(await request.json());
+  const parsed = reportSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "Choose a valid reason and keep details under 1,000 characters." }, { status: 400 });
   const report = await createReport(parsed.data, user.id);
   if (!report) return Response.json({ error: "The reported item no longer exists." }, { status: 404 });

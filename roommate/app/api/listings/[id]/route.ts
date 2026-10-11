@@ -56,7 +56,7 @@ export async function PATCH(request: Request, { params }: RouteProps) {
   const user = await getCurrentUser();
   if (!user) return Response.json({ error: "Sign in to manage listings." }, { status: 401 });
 
-  const parsed = listingPatchSchema.safeParse(await request.json());
+  const parsed = listingPatchSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json(
     { error: parsed.error.issues[0]?.message ?? "Provide a valid listing update." },
     { status: 400 },

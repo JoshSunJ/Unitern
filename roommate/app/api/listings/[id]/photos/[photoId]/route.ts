@@ -1,3 +1,4 @@
+import { z } from "zod";
 import {
   deleteListingPhotoForOwner,
   setListingCoverPhotoForOwner,
@@ -6,6 +7,7 @@ import { removeStoredListingPhoto } from "@/features/listing-photos/storage";
 import { getCurrentUser } from "@/lib/current-user";
 
 type RouteProps = { params: Promise<{ id: string; photoId: string }> };
+const photoOperationSchema = z.object({ action: z.literal("cover") });
 
 function parseIds(id: string, photoId: string) {
   const listingId = Number(id);
@@ -41,8 +43,8 @@ export async function PATCH(request: Request, { params }: RouteProps) {
 
   const { id, photoId } = await params;
   const ids = parseIds(id, photoId);
-  const body = await request.json();
-  if (!ids || body.action !== "cover") {
+  const operation = photoOperationSchema.safeParse(await request.json().catch(() => null));
+  if (!ids || !operation.success) {
     return Response.json({ error: "Provide a valid photo operation." }, { status: 400 });
   }
 
