@@ -86,7 +86,13 @@ resource "google_cloud_run_v2_service" "web" {
   }
 
   lifecycle {
-    ignore_changes = [template[0].containers[0].image]
+    # Releases also set revision provenance and gcloud client metadata.
+    ignore_changes = [
+      template[0].containers[0].image,
+      template[0].labels,
+      client,
+      client_version,
+    ]
 
     precondition {
       condition     = var.container_image != ""
@@ -109,4 +115,3 @@ resource "google_cloud_run_v2_service_iam_member" "public" {
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
-

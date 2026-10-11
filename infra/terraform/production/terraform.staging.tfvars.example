@@ -14,6 +14,7 @@ deletion_protection    = true
 create_budget          = true
 billing_account_id     = "000000-000000-000000"
 monthly_budget_usd     = 5
+enable_uptime_check    = false
 
 # Bootstrap cloud resources and secret containers first. Enable the application
 # only after the first immutable image and every required secret version exist.

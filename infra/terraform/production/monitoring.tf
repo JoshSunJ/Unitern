@@ -1,5 +1,5 @@
 resource "google_monitoring_uptime_check_config" "application_readiness" {
-  count = var.deploy_application ? 1 : 0
+  count = var.deploy_application && coalesce(var.enable_uptime_check, var.environment_name == "production") ? 1 : 0
 
   project      = var.project_id
   display_name = "Unitern ${var.environment_name} readiness"

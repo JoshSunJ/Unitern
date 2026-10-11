@@ -44,6 +44,12 @@ variable "deploy_application" {
   default     = false
 }
 
+variable "enable_uptime_check" {
+  description = "Enable recurring database readiness checks. Defaults to production only so idle staging databases can suspend."
+  type        = bool
+  default     = null
+}
+
 variable "app_url" {
   description = "Optional canonical custom HTTPS origin; defaults to Cloud Run's deterministic URL."
   type        = string
