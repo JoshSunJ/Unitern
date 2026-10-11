@@ -2,6 +2,7 @@ import type {
   LocationSearchInput,
   LocationSearchResult,
 } from "@/features/location-search/types";
+import { normalizeEnvironmentValue } from "@/lib/environment-value";
 
 type MapTilerFeature = {
   id?: string;
@@ -17,6 +18,12 @@ type MapTilerFeature = {
 
 type MapTilerResponse = { features?: MapTilerFeature[] };
 
+export class LocationSearchProviderError extends Error {
+  constructor(readonly status: number) {
+    super(`MapTiler search failed with status ${status}.`);
+  }
+}
+
 export function buildMapTilerSearchUrl(
   input: LocationSearchInput,
   apiKey: string,
@@ -24,7 +31,7 @@ export function buildMapTilerSearchUrl(
   const url = new URL(
     `https://api.maptiler.com/geocoding/${encodeURIComponent(input.query)}.json`,
   );
-  url.searchParams.set("key", apiKey);
+  url.searchParams.set("key", normalizeEnvironmentValue(apiKey) ?? "");
   url.searchParams.set("country", "us");
   url.searchParams.set("language", "en");
   url.searchParams.set("worldview", "us");
@@ -118,7 +125,7 @@ export async function searchLocations(
   });
 
   if (!response.ok) {
-    throw new Error(`MapTiler search failed with status ${response.status}.`);
+    throw new LocationSearchProviderError(response.status);
   }
 
   const data = await response.json() as MapTilerResponse;

@@ -154,3 +154,5 @@ html { scroll-padding-top: 110px; }
   [data-motion="ready"] [data-reveal] { opacity: 1; transform: none; }
   .route-place, .route-place--campus, .route-place--home, .route-place--work { transform: none; }.home-route__draw { stroke-dashoffset: 0; }
 }
+.google-sign-in button { display: inline-flex; gap: .7rem; align-items: center; background: #fff; color: var(--ink); border: 1px solid var(--line); justify-self: stretch; justify-content: center; }
+.location-search__results [aria-selected="true"] button { background: var(--blue); }

@@ -12,6 +12,7 @@ model User {
   name                             String
   email                            String                    @unique
   emailVerifiedAt                  DateTime?
+  googleSubject                    String?                   @unique
   passwordHash                     String?
   sessionVersion                   Int                       @default(0)
   affiliationType                  String?

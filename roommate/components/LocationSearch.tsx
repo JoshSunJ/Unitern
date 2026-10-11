@@ -39,7 +39,22 @@ export default function LocationSearch({
   const [results, setResults] = useState<LocationSearchResult[]>([]);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [activeIndex, setActiveIndex] = useState(-1);
   const requestNumber = useRef(0);
+  const latitude = proximity?.latitude;
+  const longitude = proximity?.longitude;
+  const bounds = boundingBox?.join(",");
+
+  function selectResult(result: LocationSearchResult) {
+    requestNumber.current++;
+    setQuery(result.label);
+    setSelectedLabel(result.label);
+    setResults([]);
+    setStatus("idle");
+    setMessage("");
+    setActiveIndex(-1);
+    onSelect(result);
+  }
 
   useEffect(() => {
     const trimmedQuery = query.trim();
@@ -54,12 +69,12 @@ export default function LocationSearch({
       setMessage("");
 
       const params = new URLSearchParams({ q: trimmedQuery, kind });
-      if (proximity) {
-        params.set("latitude", String(proximity.latitude));
-        params.set("longitude", String(proximity.longitude));
+      if (latitude !== undefined && longitude !== undefined) {
+        params.set("latitude", String(latitude));
+        params.set("longitude", String(longitude));
       }
-      if (boundingBox) {
-        params.set("bbox", boundingBox.join(","));
+      if (bounds) {
+        params.set("bbox", bounds);
       }
 
       try {
@@ -77,12 +92,14 @@ export default function LocationSearch({
         }
 
         setResults(body.results ?? []);
+        setActiveIndex(-1);
         setStatus("idle");
         setMessage(body.results?.length ? "" : "No locations found.");
-      } catch (error) {
+      } catch {
         if (controller.signal.aborted) return;
+        setResults([]);
         setStatus("error");
-        setMessage(error instanceof Error ? error.message : "Search failed.");
+        setMessage("Could not search locations. Please check your connection and try again.");
       }
     }, 320);
 
@@ -90,7 +107,7 @@ export default function LocationSearch({
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [boundingBox, kind, proximity, query, selectedLabel]);
+  }, [bounds, kind, latitude, longitude, query, selectedLabel]);
 
   return (
     <div className="location-search">
@@ -104,14 +121,29 @@ export default function LocationSearch({
           value={query}
           onChange={(event) => {
             const nextQuery = event.target.value;
+            requestNumber.current++;
             setQuery(nextQuery);
             setSelectedLabel("");
-            if (nextQuery.trim().length < 2) {
-              setResults([]);
-              setStatus("idle");
-              setMessage("");
-            }
+            setResults([]);
+            setActiveIndex(-1);
+            setStatus("idle");
+            setMessage("");
             onInputChange?.();
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              event.preventDefault();
+              requestNumber.current++;
+              setResults([]);
+              setActiveIndex(-1);
+              setStatus("idle");
+            } else if (results.length && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
+              event.preventDefault();
+              setActiveIndex((current) => (current + (event.key === "ArrowDown" ? 1 : -1) + results.length) % results.length);
+            } else if (event.key === "Enter" && activeIndex >= 0 && results[activeIndex]) {
+              event.preventDefault();
+              selectResult(results[activeIndex]);
+            }
           }}
           placeholder={placeholder}
           autoComplete="off"
@@ -119,23 +151,18 @@ export default function LocationSearch({
           aria-autocomplete="list"
           aria-expanded={results.length > 0}
           aria-controls={`${inputId}-results`}
+          aria-activedescendant={activeIndex >= 0 ? `${inputId}-option-${activeIndex}` : undefined}
         />
         {status === "loading" && <small>Searching…</small>}
       </div>
 
       {results.length > 0 && (
-        <ul id={`${inputId}-results`} className="location-search__results">
-          {results.map((result) => (
-            <li key={result.id}>
+        <ul id={`${inputId}-results`} className="location-search__results" role="listbox" aria-label={`${label} suggestions`}>
+          {results.map((result, index) => (
+            <li key={result.id} id={`${inputId}-option-${index}`} role="option" aria-selected={activeIndex === index}>
               <button
                 type="button"
-                onClick={() => {
-                  setQuery(result.label);
-                  setSelectedLabel(result.label);
-                  setResults([]);
-                  setMessage("");
-                  onSelect(result);
-                }}
+                onClick={() => selectResult(result)}
               >
                 <strong>{result.shortLabel}</strong>
                 <span>{result.label}</span>
@@ -145,7 +172,7 @@ export default function LocationSearch({
         </ul>
       )}
 
-      {message && <p className="location-search__message">{message}</p>}
+      {message && <p className="location-search__message" role="status">{message}</p>}
     </div>
   );
 }

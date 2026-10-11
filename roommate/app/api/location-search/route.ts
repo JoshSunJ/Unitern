@@ -1,7 +1,9 @@
 import type { NextRequest } from "next/server";
 
-import { searchLocations } from "@/features/location-search/service";
+import { LocationSearchProviderError, searchLocations } from "@/features/location-search/service";
 import type { LocationSearchKind } from "@/features/location-search/types";
+import { normalizeEnvironmentValue } from "@/lib/environment-value";
+import { logOperationalError } from "@/lib/operational-log";
 
 const validKinds = new Set<LocationSearchKind>([
   "city",
@@ -24,10 +26,10 @@ export async function GET(request: NextRequest) {
     return Response.json({ error: "Unsupported search type." }, { status: 400 });
   }
 
-  const apiKey = process.env.MAPTILER_API_KEY?.trim();
+  const apiKey = normalizeEnvironmentValue(process.env.MAPTILER_API_KEY);
   if (!apiKey) {
     return Response.json(
-      { error: "Add MAPTILER_API_KEY to .env, then restart the development server." },
+      { error: "Location search is temporarily unavailable. Please try again later." },
       { status: 503 },
     );
   }
@@ -65,10 +67,14 @@ export async function GET(request: NextRequest) {
       kind: requestedKind as LocationSearchKind,
       proximity,
       boundingBox,
-    }, apiKey, request.nextUrl.origin);
+    }, apiKey, process.env.AUTH_URL ? new URL(process.env.AUTH_URL).origin : request.nextUrl.origin);
 
     return Response.json({ results });
-  } catch {
+  } catch (error) {
+    logOperationalError("location_search.failed", {
+      kind: requestedKind,
+      providerStatus: error instanceof LocationSearchProviderError ? error.status : undefined,
+    });
     return Response.json(
       { error: "The location provider could not complete this search." },
       { status: 502 },

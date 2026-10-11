@@ -14,6 +14,7 @@ import {
   requestNetworkIdentifier,
 } from "@/features/security/rate-limit";
 import { logOperationalError, logOperationalInfo } from "@/lib/operational-log";
+import { passwordSignupEnabled } from "@/features/google-auth/config";
 
 const registrationSchema = z.object({
   name: z.string().trim().min(2).max(80),
@@ -22,6 +23,9 @@ const registrationSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  if (!passwordSignupEnabled()) {
+    return Response.json({ error: "Please create your account with Google while email signup is unavailable." }, { status: 503 });
+  }
   validateEmailDeliveryConfiguration();
   const parsed = registrationSchema.safeParse(await request.json().catch(() => null));
 

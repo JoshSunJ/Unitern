@@ -14,31 +14,35 @@ export default function SignUpForm() {
     setError("");
     setIsSubmitting(true);
 
-    const response = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: formData.get("name"),
-        email: formData.get("email"),
-        password: formData.get("password"),
-      }),
-    });
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.get("name"),
+          email: formData.get("email"),
+          password: formData.get("password"),
+        }),
+      });
 
-    if (!response.ok) {
-      setError((await response.json()).error ?? "Could not create account.");
-      setIsSubmitting(false);
-      return;
-    }
+      if (!response.ok) {
+        setError((await response.json()).error ?? "Could not create account.");
+        return;
+      }
 
-    const result = await response.json();
-    if (result.verificationPreviewUrl) {
-      setVerificationPreviewUrl(result.verificationPreviewUrl);
+      const result = await response.json();
+      if (result.verificationPreviewUrl) {
+        setVerificationPreviewUrl(result.verificationPreviewUrl);
+        return;
+      }
+      router.push(result.emailDeliveryUnavailable
+        ? "/verify-email?delivery=unavailable"
+        : "/verify-email?sent=1");
+    } catch {
+      setError("Could not create your account. Please check your connection and try again.");
+    } finally {
       setIsSubmitting(false);
-      return;
     }
-    router.push(result.emailDeliveryUnavailable
-      ? "/verify-email?delivery=unavailable"
-      : "/verify-email?sent=1");
   }
 
   if (verificationPreviewUrl) {

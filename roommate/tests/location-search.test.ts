@@ -7,6 +7,13 @@ import {
   searchLocations,
 } from "../features/location-search/service";
 
+test("a server key copied with .env quotes still authenticates the search request", () => {
+  for (const key of [' "test-key" ', " 'test-key' ", "test-key"]) {
+    const url = buildMapTilerSearchUrl({ query: "Adobe", kind: "destination" }, key);
+    assert.equal(url.searchParams.get("key"), "test-key");
+  }
+});
+
 test("US city search restricts and normalizes provider parameters", () => {
   const url = buildMapTilerSearchUrl({
     query: "New York",

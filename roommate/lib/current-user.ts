@@ -14,14 +14,14 @@ export type CurrentUser = {
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
   const session = await auth();
-  const email = session?.user?.email;
+  const userId = Number(session?.user?.id);
 
-  if (!email) {
+  if (!Number.isInteger(userId) || userId < 1) {
     return null;
   }
 
   const user = await prisma.user.findUnique({
-    where: { email },
+    where: { id: userId },
   });
 
   if (!user) {
