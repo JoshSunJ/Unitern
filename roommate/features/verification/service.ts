@@ -1,6 +1,7 @@
 import type { Prisma } from "@/generated/prisma/client";
 import type { CurrentUser } from "@/lib/current-user";
 import prisma from "@/lib/prisma";
+import { isPublicBeta } from "@/features/launch/config";
 
 import type { AffiliationVerificationInput } from "./schema";
 import { maskEmail, normalizeEmailDomain } from "./format";
@@ -141,11 +142,12 @@ export async function startAffiliationVerification(
     organization?.domains.some((candidate) => candidate.domain === emailDomain),
   );
   const organizationName = organization?.name ?? input.organizationName;
-  const method: VerificationMethod = domainTrusted
+  const emailVerification = domainTrusted && !isPublicBeta();
+  const method: VerificationMethod = emailVerification
     ? "institution_email"
     : "manual_review";
-  const status = domainTrusted ? "email_pending" : "pending_review";
-  const rawToken = domainTrusted ? createAffiliationVerificationToken() : null;
+  const status = emailVerification ? "email_pending" : "pending_review";
+  const rawToken = emailVerification ? createAffiliationVerificationToken() : null;
 
   const verification = await prisma.$transaction(async (transaction) => {
     await transaction.affiliationVerification.updateMany({

@@ -5,6 +5,8 @@ import {
   buildEmailVerificationUrl,
   EmailDeliveryConfigurationError,
   sendEmailVerification,
+  sendPasswordReset,
+  sendAffiliationVerification,
   validateEmailDeliveryConfiguration,
 } from "../features/account-email/delivery";
 import {
@@ -87,4 +89,17 @@ test("resend delivery keeps credentials server-side and sends an idempotent requ
   assert.equal(request?.url, "https://api.resend.com/emails");
   assert.equal(request?.headers.get("authorization"), "Bearer server-secret");
   assert.equal(request?.headers.get("idempotency-key"), "verification-1");
+});
+
+test("disabled beta delivery neither calls an email provider nor exposes preview links", async () => {
+  const environment = { NODE_ENV: "production", AUTH_URL: "https://unitern.example", UNITERN_LAUNCH_MODE: "public_beta", EMAIL_PROVIDER: "disabled" };
+  const message = { recipient: "student@example.com", name: "Student", token: "private-token", idempotencyKey: "beta" };
+  let requests = 0;
+  const fetchMock: typeof fetch = async () => { requests++; return Response.json({ id: "unexpected" }); };
+  for (const send of [sendEmailVerification(message, environment, fetchMock), sendPasswordReset(message, environment, fetchMock), sendAffiliationVerification({ ...message, organizationName: "School" }, environment, fetchMock)]) {
+    await assert.rejects(send, /unavailable during the public beta/);
+  }
+  assert.equal(requests, 0);
+  assert.throws(() => validateEmailDeliveryConfiguration({ ...environment, AUTH_URL: "http://unitern.example" }), /HTTPS/);
+  assert.throws(() => validateEmailDeliveryConfiguration({ ...environment, UNITERN_LAUNCH_MODE: "full" }), /EMAIL_PROVIDER must be set to resend/);
 });

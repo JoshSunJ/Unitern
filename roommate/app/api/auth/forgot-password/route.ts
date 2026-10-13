@@ -1,3 +1,4 @@
+import { outboundEmailEnabled } from "@/features/launch/config";
 import { z } from "zod";
 
 import {
@@ -17,6 +18,7 @@ const requestSchema = z.object({ email: z.string().trim().email() });
 const PUBLIC_MESSAGE = "If that account exists, a password-reset link is on its way.";
 
 export async function POST(request: Request) {
+  if (!outboundEmailEnabled()) return Response.json({ error: "Email links are unavailable during the public beta. Sign in with Google." }, { status: 503 });
   validateEmailDeliveryConfiguration();
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {

@@ -11,6 +11,7 @@ import {
 import { logOperationalInfo, logOperationalError } from "@/lib/operational-log";
 import prisma from "@/lib/prisma";
 import { googleSignInEnabled } from "@/features/google-auth/config";
+import { isPublicBeta } from "@/features/launch/config";
 import { resolveGoogleUser } from "@/features/google-auth/service";
 
 const credentialsSchema = z.object({
@@ -21,7 +22,7 @@ const credentialsSchema = z.object({
 export const { auth, handlers } = NextAuth({
   providers: [
     ...(googleSignInEnabled() ? [Google({ checks: ["pkce", "state", "nonce"] })] : []),
-    Credentials({
+    ...(!isPublicBeta() ? [Credentials({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
@@ -76,7 +77,7 @@ export const { auth, handlers } = NextAuth({
           sessionVersion: user.sessionVersion,
         };
       },
-    }),
+    })] : []),
   ],
   pages: {
     signIn: "/sign-in",

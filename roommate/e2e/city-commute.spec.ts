@@ -37,9 +37,9 @@ test("street route times and the commute slider filter available homes without r
   const ids = await createCommuteE2EListings();
   let requests = 0;
   await page.route("**/api/commute/routes?*", async (route) => {
-    requests++;
     const params = new URL(route.request().url()).searchParams;
     const origin = params.get("origin")!.split(",").map(Number);
+    if ((origin[0] === -121.89 && origin[1] === 37.33) || (origin[0] === -121.9 && origin[1] === 37.305)) requests++;
     const minutes = origin[0] === -121.89 ? 8 : 48;
     await route.fulfill({ json: { routes: params.get("modes")!.split(",").map((mode) => ({ mode, distanceMiles: minutes / 10, durationMinutes: minutes, provider: "osrm", geometry: { type: "LineString", coordinates: [origin, [-121.8811, 37.3352]] } })) } });
   });
@@ -52,6 +52,7 @@ test("street route times and the commute slider filter available homes without r
     await expect(matches.getByRole("button", { name: /E2E commute farther/ })).toHaveCount(0);
     await page.getByRole("combobox", { name: "Home to compare", exact: true }).selectOption(String(ids[1]));
     await expect(page.getByText("48 min", { exact: true })).toBeVisible();
+    await expect(page.getByText("Calculating road routes…", { exact: true })).toHaveCount(0);
     const before = requests;
     await page.getByRole("slider", { name: /Maximum commute/ }).press("End");
     await expect(matches.getByRole("button", { name: /E2E commute farther.*48 min.*street route/ })).toBeVisible();

@@ -5,6 +5,7 @@ export function googleSignInEnabled(environment: Environment = process.env) {
 }
 
 export function passwordSignupEnabled(environment: Environment = process.env) {
+  if (environment.UNITERN_LAUNCH_MODE === "public_beta" || environment.EMAIL_PROVIDER === "disabled") return false;
   return environment.NODE_ENV !== "production" && environment.EMAIL_PROVIDER !== "resend"
     || Boolean(environment.EMAIL_FROM && !/@resend\.dev(?:>|\s|$)/i.test(environment.EMAIL_FROM));
 }

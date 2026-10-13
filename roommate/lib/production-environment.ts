@@ -5,6 +5,7 @@ import {
   validateProductionDatabaseConfiguration,
 } from "@/lib/database-config";
 import { validateEmailDeliveryConfiguration } from "@/features/account-email/delivery";
+import { isPublicBeta } from "@/features/launch/config";
 
 type Environment = Record<string, string | undefined>;
 
@@ -14,7 +15,7 @@ export type ProductionEnvironmentSummary = {
   database: ProductionDatabaseConfiguration;
   photoStorage: "s3";
   mapSearchProvider: "maptiler";
-  emailProvider: "resend";
+  emailProvider: "resend" | "disabled";
   roadRoutingConfigured: boolean;
 };
 
@@ -77,6 +78,16 @@ export function validateProductionEnvironment(
   }
 
   const authUrl = parseHttpsUrl(value(environment, "AUTH_URL"), "AUTH_URL", issues);
+  const beta = isPublicBeta(environment);
+  if (value(environment, "UNITERN_LAUNCH_MODE") && !["full", "public_beta"].includes(value(environment, "UNITERN_LAUNCH_MODE"))) {
+    issues.push("UNITERN_LAUNCH_MODE must be full or public_beta.");
+  }
+  if (beta && (!value(environment, "AUTH_GOOGLE_ID") || !value(environment, "AUTH_GOOGLE_SECRET"))) {
+    issues.push("Public beta requires Google sign-in credentials.");
+  }
+  if (beta && value(environment, "EMAIL_PROVIDER") !== "disabled") {
+    issues.push("Public beta must explicitly disable outbound email.");
+  }
   if (Boolean(value(environment, "AUTH_GOOGLE_ID")) !== Boolean(value(environment, "AUTH_GOOGLE_SECRET"))) {
     issues.push("Set both AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET to enable Google sign-in.");
   }
@@ -138,7 +149,7 @@ export function validateProductionEnvironment(
     database,
     photoStorage: "s3",
     mapSearchProvider: "maptiler",
-    emailProvider: "resend",
+    emailProvider: beta ? "disabled" : "resend",
     roadRoutingConfigured: Boolean(value(environment, "MAPBOX_ACCESS_TOKEN")),
   };
 }

@@ -3,6 +3,8 @@ import localFont from "next/font/local";
 import Footer from "@/components/Footer";
 import HousingChat from "@/components/HousingChat";
 import { Suspense } from "react";
+import { connection } from "next/server";
+import { isPublicBeta } from "@/features/launch/config";
 import "./globals.css";
 import "./design.css";
 import "./housing-chat.css";
@@ -28,14 +30,16 @@ export const metadata: Metadata = {
   description: "Find student and intern housing around the places and commutes that matter.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  await connection();
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <body id="top" className={`${figtree.variable} ${garamond.variable}`}>
+        {isPublicBeta() && <aside className="beta-notice" aria-label="Public beta">Public beta · Google sign-in · Manual affiliation review. Email notifications are unavailable; check messages and review results in the app.</aside>}
         {children}
         <Footer />
         <Suspense fallback={null}><HousingChat /></Suspense>

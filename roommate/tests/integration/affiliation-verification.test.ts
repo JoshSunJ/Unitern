@@ -15,7 +15,8 @@ const runId = `${process.pid}-${Date.now()}`;
 const studentEmail = `student-${runId}@integration.unitern.local`;
 const fallbackEmail = `fallback-${runId}@integration.unitern.local`;
 const reviewerEmail = `reviewer-${runId}@integration.unitern.local`;
-const emails = [studentEmail, fallbackEmail, reviewerEmail];
+const betaEmail = `beta-${runId}@integration.unitern.local`;
+const emails = [studentEmail, fallbackEmail, reviewerEmail, betaEmail];
 
 function asCurrentUser(user: {
   id: number;
@@ -115,4 +116,29 @@ test("an unknown organization uses an auditable administrator-review fallback", 
   assert.match(attempt.reviewerNote ?? "", /approved fallback process/);
   assert.equal(updated.verificationStatus, "verified");
   assert.equal(updated.affiliationExpiresAt?.toISOString(), "2026-10-22T23:59:59.999Z");
+});
+
+test("public beta queues a trusted school email for review without granting access or creating an email token", async () => {
+  const previous = process.env.UNITERN_LAUNCH_MODE;
+  process.env.UNITERN_LAUNCH_MODE = "public_beta";
+  try {
+    const organization = await prisma.organization.findFirstOrThrow({ where: { domains: { some: { domain: "sjsu.edu" } }, type: "student" } });
+    const user = await prisma.user.create({ data: { name: "Beta Applicant", email: betaEmail } });
+    const started = await startAffiliationVerification(asCurrentUser(user), { affiliationType: "student", organizationId: organization.id, organizationName: "", affiliationEmail: `beta-${runId}@sjsu.edu`, expectedEndDate: null });
+    assert.equal(started.kind, "manual_review");
+    if (started.kind !== "manual_review") return;
+    const [attempt, updated, tokenCount] = await Promise.all([
+      prisma.affiliationVerification.findUniqueOrThrow({ where: { id: started.verificationId } }),
+      prisma.user.findUniqueOrThrow({ where: { id: user.id } }),
+      prisma.affiliationVerificationToken.count({ where: { verificationId: started.verificationId } }),
+    ]);
+    assert.equal(attempt.method, "manual_review");
+    assert.equal(attempt.status, "pending_review");
+    assert.equal(updated.verificationStatus, "submitted");
+    assert.equal(updated.affiliationVerifiedAt, null);
+    assert.equal(tokenCount, 0);
+  } finally {
+    if (previous === undefined) delete process.env.UNITERN_LAUNCH_MODE;
+    else process.env.UNITERN_LAUNCH_MODE = previous;
+  }
 });

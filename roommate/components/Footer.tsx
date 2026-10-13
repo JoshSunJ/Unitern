@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { isPublicBeta } from "@/features/launch/config";
 
 const groups = [
   { title: "Explore", links: [["Find a home", "/#listings"], ["Housing requests", "/requests"], ["Area & commute guide", "/map"]] },
@@ -20,12 +21,12 @@ export default function Footer() {
           {groups.map(group => (
             <div key={group.title}>
               <h2>{group.title}</h2>
-              {group.links.map(([label, href]) => <Link key={href} href={href}>{label}</Link>)}
+              {group.links.filter(([, href]) => !(isPublicBeta() && href === "/forgot-password")).map(([label, href]) => <Link key={href} href={href}>{label}</Link>)}
             </div>
           ))}
         </nav>
         <Link href="/" className="site-footer__wordmark" aria-label="Unitern home">unitern<span aria-hidden="true">↗</span></Link>
-        <div className="site-footer__bottom"><p>© {new Date().getFullYear()} Unitern</p><p>For students. For interns. For what comes next.</p><a href="#top">Back to top ↑</a></div>
+        <div className="site-footer__bottom"><p>© {new Date().getFullYear()} Unitern</p><Link href="/privacy">Privacy information</Link><p>For students. For interns. For what comes next.</p><a href="#top">Back to top ↑</a></div>
       </div>
     </footer>
   );

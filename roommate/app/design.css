@@ -177,3 +177,9 @@ html { scroll-padding-top: 110px; }
 @media (max-width: 700px) { .hero--home:has(.home-city-search) { min-height: 930px; } .location-map { position: relative; top: auto; height: 480px; min-height: 0; } }
 .map-experience { overflow: clip; }
 .map-preference-panel { overflow: visible; }
+
+.beta-notice { max-width: 1110px; margin: 1rem auto 0; padding: 0.8rem 1.2rem; border: 1px solid var(--line); border-radius: 9px; background: #e6d2f5; color: var(--ink); font-size: 0.8rem; line-height: 1.5; }
+.privacy-page { max-width: 800px; padding-block: 3rem 6rem; line-height: 1.7; }
+.privacy-page h1 { font-size: clamp(3rem, 6vw, 5rem); line-height: 1; }
+.privacy-page h2 { margin-top: 2rem; font-size: 1.2rem; }
+@media (max-width: 700px) { .beta-notice { margin-inline: 1rem; } }
