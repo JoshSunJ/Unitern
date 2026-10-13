@@ -8,6 +8,7 @@ import {
   getOrganizationOptions,
 } from "@/features/verification/service";
 import { getCurrentUser } from "@/lib/current-user";
+import { isPublicBeta } from "@/features/launch/config";
 
 type PageProps = {
   searchParams: Promise<{ status?: string }>;
@@ -64,12 +65,13 @@ export default async function VerifyPage({ searchParams }: PageProps) {
               <p>Your one-time affiliation link expires after 24 hours.</p>
               <p>Submitting again invalidates the previous link.</p>
             </section>
-            <VerificationForm organizations={organizations} />
+            <VerificationForm organizations={organizations} manualReviewOnly={isPublicBeta()} />
           </>
         ) : latest?.status === "pending_review" ? (
           <section className="owner-notice">
             <strong>Administrator review pending</strong>
             <p>{latest.organizationName} · {latest.maskedAffiliationEmail}</p>
+            {isPublicBeta() && <p>Check this page for the decision. Email notifications are unavailable during the public beta.</p>}
           </section>
         ) : (
           <>
@@ -83,7 +85,7 @@ export default async function VerifyPage({ searchParams }: PageProps) {
                 <p>You can correct the details and try again.</p>
               </section>
             )}
-            <VerificationForm organizations={organizations} />
+            <VerificationForm organizations={organizations} manualReviewOnly={isPublicBeta()} />
           </>
         )}
       </main>

@@ -1,0 +1,25 @@
+project_id            = "your-production-project"
+environment_name      = "production"
+launch_mode           = "public_beta"
+region                = "us-west1"
+service_name          = "unitern-web"
+github_repository     = "JoshSunJ/Unitern"
+admin_email           = "your-real-admin-address@example.com"
+email_from            = ""
+r2_bucket             = "unitern-production-listing-photos"
+r2_endpoint           = "https://ACCOUNT_ID.r2.cloudflarestorage.com"
+photo_public_base_url = "https://YOUR-CLOUD-RUN-ORIGIN/api/photos"
+google_sign_in_enabled = true
+housing_chat_enabled  = true
+road_routing_enabled  = false
+max_instances         = 1
+enable_uptime_check   = false
+deletion_protection   = true
+create_budget         = true
+billing_account_id    = "000000-000000-000000"
+monthly_budget_usd    = 5
+
+# Apply the foundation first. Set these only once every secret has a value
+# and the reviewed release image is in this project's Artifact Registry.
+deploy_application = false
+container_image    = ""

@@ -98,6 +98,10 @@ resource "google_cloud_run_v2_service" "web" {
       condition     = var.container_image != ""
       error_message = "container_image is required when deploy_application is true."
     }
+    precondition {
+      condition     = var.launch_mode != "public_beta" || var.google_sign_in_enabled
+      error_message = "Public beta requires Google sign-in."
+    }
   }
 
   depends_on = [

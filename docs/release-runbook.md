@@ -189,6 +189,50 @@ A commit is eligible for production only when:
 - an operator is available to observe the production release and respond to a
   failure.
 
+## Public beta without an owned email domain
+
+Use `terraform.public-beta.tfvars.example` for the explicitly authorized beta.
+`launch_mode = "public_beta"` sets `UNITERN_LAUNCH_MODE=public_beta` and
+`EMAIL_PROVIDER=disabled`, requires Google OAuth credentials, and omits the
+Resend secret. The same immutable application image supports full staging and
+beta production; these flags are evaluated at request time.
+
+Google sign-in confirms the account email. Every school or employer submission,
+including a trusted domain, instead enters administrator review. The beta never
+creates an affiliation email token or grants verified affiliation automatically.
+Administrators review the queue at `/admin/verifications` after independently
+checking the applicant's affiliation. Users check `/verify` and `/inquiries` for
+decisions and messages; no email notifications are sent. Password sign-in,
+registration and email-link recovery are unavailable in this mode.
+
+Create a fresh production database and photo bucket. Apply migrations, which
+include the organization directory, without running `db:seed` or copying
+staging users and demo listings. Keep the Google client restricted to the live
+origin and its `/api/auth/callback/google` redirect. Publish an external audience
+with only OpenID, email and profile scopes. Restrict separate MapTiler keys to
+the production origin and store backend credentials in Secret Manager.
+
+Without an owned photo domain, set `photo_public_base_url` to the live origin
+plus `/api/photos` and keep the R2 bucket private. The app serves only validated
+image filenames under the `listings/` namespace, with size/type checks and
+browser caching. This avoids relying on Cloudflare's development-only public
+URL. Run `photos:validate:production` after deployment to verify upload, read
+through the live app, and removal using a disposable image probe.
+
+Use zero minimum Cloud Run instances, a single maximum instance and the smallest
+Neon compute with idle suspension. Disable recurring database uptime checks for
+this beta so they do not keep the free database awake. Startup readiness and
+process liveness probes remain enabled. Billing budget alerts are notifications,
+not a hard spending cap. Optional Gemini must continue using a billing-disabled
+project with the application's request limits and consent notice.
+
+CI runs the normal browser journeys and separate `test:e2e:beta` journeys. Before
+public handoff, confirm Google sign-in, pending manual review, posting gates,
+maps, durable photo storage, health checks and empty production marketplace
+data. To enable a full email-supported launch later, verify an owned sender
+domain, populate the Resend secret, test delivery, then explicitly change
+`launch_mode` to `full` and review the resulting plan.
+
 This pipeline reduces risk; it does not make the application “bug-proof.” Tests,
 reviews, isolated staging, health probes, monitoring, logs, backups, and rollback
 each catch or contain a different class of failure.

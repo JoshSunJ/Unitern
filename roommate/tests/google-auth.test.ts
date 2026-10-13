@@ -25,3 +25,8 @@ test("Google requires both credentials and the Resend test sender cannot offer p
   assert.equal(passwordSignupEnabled({ NODE_ENV: "production", EMAIL_PROVIDER: "resend", EMAIL_FROM: "Unitern <onboarding@resend.dev>" }), false);
   assert.equal(passwordSignupEnabled({ NODE_ENV: "development", EMAIL_PROVIDER: "preview" }), true);
 });
+
+test("public beta disables password registration even with a verified email sender", () => {
+  assert.equal(passwordSignupEnabled({ UNITERN_LAUNCH_MODE: "public_beta", NODE_ENV: "production", EMAIL_PROVIDER: "resend", EMAIL_FROM: "Unitern <accounts@unitern.example>" }), false);
+  assert.equal(passwordSignupEnabled({ EMAIL_PROVIDER: "disabled" }), false);
+});

@@ -62,6 +62,7 @@ export function emailDeliveryFailureAttributes(error: unknown) {
 }
 
 type EmailDeliveryConfiguration =
+  | { provider: "disabled"; baseUrl: URL }
   | { provider: "preview"; baseUrl: URL }
   | { provider: "resend"; baseUrl: URL; apiKey: string; sender: string };
 
@@ -86,6 +87,10 @@ export function validateEmailDeliveryConfiguration(
   const baseUrl = appUrl(environment);
   const provider = environment.EMAIL_PROVIDER?.trim()
     || (environment.NODE_ENV === "production" ? "" : "preview");
+
+  if (provider === "disabled" && environment.UNITERN_LAUNCH_MODE === "public_beta") {
+    return { provider, baseUrl };
+  }
 
   if (provider === "preview") {
     if (environment.NODE_ENV === "production") {
@@ -143,6 +148,8 @@ export async function sendEmailVerification(
   const verificationUrl = buildEmailVerificationUrl(message.token, environment);
   const configuration = validateEmailDeliveryConfiguration(environment);
 
+  if (configuration.provider === "disabled") throw new EmailDeliveryConfigurationError("Email delivery is unavailable during the public beta.");
+
   if (configuration.provider === "preview") {
     return { provider: "preview", previewUrl: verificationUrl };
   }
@@ -186,6 +193,8 @@ export async function sendPasswordReset(
 ): Promise<EmailDeliveryResult> {
   const resetUrl = buildPasswordResetUrl(message.token, environment);
   const configuration = validateEmailDeliveryConfiguration(environment);
+
+  if (configuration.provider === "disabled") throw new EmailDeliveryConfigurationError("Email delivery is unavailable during the public beta.");
 
   if (configuration.provider === "preview") {
     return { provider: "preview", previewUrl: resetUrl };
@@ -231,6 +240,8 @@ export async function sendAffiliationVerification(
 ): Promise<EmailDeliveryResult> {
   const verificationUrl = buildAffiliationVerificationUrl(message.token, environment);
   const configuration = validateEmailDeliveryConfiguration(environment);
+
+  if (configuration.provider === "disabled") throw new EmailDeliveryConfigurationError("Email delivery is unavailable during the public beta.");
 
   if (configuration.provider === "preview") {
     return { provider: "preview", previewUrl: verificationUrl };

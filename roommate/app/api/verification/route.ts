@@ -13,6 +13,7 @@ import {
 } from "@/features/security/rate-limit";
 import { getCurrentUser } from "@/lib/current-user";
 import { logOperationalError, logOperationalInfo } from "@/lib/operational-log";
+import { isPublicBeta } from "@/features/launch/config";
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -65,7 +66,9 @@ export async function POST(request: Request) {
     });
     return Response.json({
       status: "pending_review",
-      message: "Your organization or email domain needs administrator review.",
+      message: isPublicBeta()
+        ? "Your affiliation is queued for manual review. Check this page for the decision; email notifications are unavailable during the public beta."
+        : "Your organization or email domain needs administrator review.",
     }, { status: 202 });
   }
 

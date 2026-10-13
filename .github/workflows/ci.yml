@@ -159,6 +159,9 @@ jobs:
       - name: Run browser journeys
         run: npm run test:e2e
 
+      - name: Run public beta journeys
+        run: npm run test:e2e:beta
+
   container:
     name: Build deployment image
     needs:

@@ -14,6 +14,16 @@ variable "environment_name" {
   }
 }
 
+variable "launch_mode" {
+  description = "Full launch or an explicit Google-only beta with email disabled and manual affiliation review."
+  type        = string
+  default     = "full"
+  validation {
+    condition     = contains(["full", "public_beta"], var.launch_mode)
+    error_message = "launch_mode must be full or public_beta."
+  }
+}
+
 variable "region" {
   description = "Google Cloud region for Artifact Registry and Cloud Run."
   type        = string

@@ -1,13 +1,34 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 export const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 export const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 
 export class PhotoValidationError extends Error {}
 export class PhotoStorageConfigurationError extends Error {}
+
+export function publicPhotoFilenameValid(filename: string) {
+  return /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\.(jpg|png|webp)$/.test(filename);
+}
+
+export async function readPublicListingPhoto(filename: string) {
+  if (!publicPhotoFilenameValid(filename)) throw new PhotoValidationError("Invalid photo filename.");
+  const object = await getS3Client().send(new GetObjectCommand({
+    Bucket: getS3StorageConfig().bucket,
+    Key: `listings/${filename}`,
+  }));
+  if (!object.Body || !object.ContentLength || object.ContentLength > MAX_PHOTO_BYTES
+    || !ALLOWED_PHOTO_TYPES.includes(object.ContentType as (typeof ALLOWED_PHOTO_TYPES)[number])) {
+    throw new PhotoValidationError("Stored photo is not a supported image.");
+  }
+  const bytes = await object.Body.transformToByteArray();
+  if (bytes.length > MAX_PHOTO_BYTES || !hasMatchingSignature(bytes, object.ContentType!)) {
+    throw new PhotoValidationError("Stored photo contents are invalid.");
+  }
+  return { bytes, contentType: object.ContentType!, etag: object.ETag };
+}
 
 const extensionByType: Record<(typeof ALLOWED_PHOTO_TYPES)[number], string> = {
   "image/jpeg": "jpg",

@@ -1,3 +1,4 @@
+import { outboundEmailEnabled } from "@/features/launch/config";
 import { z } from "zod";
 
 import prisma from "@/lib/prisma";
@@ -22,6 +23,7 @@ const genericResult = {
 };
 
 export async function POST(request: Request) {
+  if (!outboundEmailEnabled()) return Response.json({ error: "Email links are unavailable during the public beta. Sign in with Google." }, { status: 503 });
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json(genericResult);
 

@@ -73,3 +73,19 @@ test("custom S3 endpoints require an explicit credential pair", () => {
 test("production rejects an incomplete Google credential pair", () => {
   assert.throws(() => validateProductionEnvironment({ ...validEnvironment, AUTH_GOOGLE_ID: "client.apps.googleusercontent.com" }), /Set both AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET/);
 });
+
+test("public beta permits no sender only with Google sign-in and explicitly disabled email", () => {
+  const beta = {
+    ...validEnvironment,
+    UNITERN_LAUNCH_MODE: "public_beta",
+    EMAIL_PROVIDER: "disabled",
+    RESEND_API_KEY: "",
+    EMAIL_FROM: "",
+    AUTH_GOOGLE_ID: "client.apps.googleusercontent.com",
+    AUTH_GOOGLE_SECRET: "server-only-google-secret",
+  };
+  assert.equal(validateProductionEnvironment(beta).emailProvider, "disabled");
+  assert.throws(() => validateProductionEnvironment({ ...beta, EMAIL_PROVIDER: "resend" }), /explicitly disable outbound email/);
+  assert.throws(() => validateProductionEnvironment({ ...beta, AUTH_GOOGLE_ID: "", AUTH_GOOGLE_SECRET: "" }), /requires Google sign-in/);
+  assert.throws(() => validateProductionEnvironment({ ...beta, UNITERN_LAUNCH_MODE: "full" }), /EMAIL_PROVIDER must be set to resend/);
+});

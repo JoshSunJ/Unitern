@@ -17,8 +17,10 @@ type Result = {
 
 export default function VerificationForm({
   organizations,
+  manualReviewOnly = false,
 }: {
   organizations: OrganizationOption[];
+  manualReviewOnly?: boolean;
 }) {
   const [affiliationType, setAffiliationType] = useState<AffiliationType>("student");
   const [selectedOrganizationId, setSelectedOrganizationId] = useState("other");
@@ -143,10 +145,12 @@ export default function VerificationForm({
         </label>
       )}
       <p className="auth-form__hint">
-        Trusted organization domains receive an automatic email link. Unknown or mismatched domains go to administrator review. Never submit passwords or identity documents here.
+        {manualReviewOnly
+          ? "Affiliations are reviewed manually during the public beta. Check this page for your review status. Do not submit passwords or identity documents."
+          : "Trusted organization domains receive an automatic email link. Unknown or mismatched domains go to administrator review. Never submit passwords or identity documents here."}
       </p>
       {result?.error && <p className="form-error" role="alert">{result.error}</p>}
-      <button disabled={loading}>{loading ? "Starting verification…" : "Verify affiliation"}</button>
+      <button disabled={loading}>{loading ? "Starting verification…" : manualReviewOnly ? "Request affiliation review" : "Verify affiliation"}</button>
     </form>
   );
 }
