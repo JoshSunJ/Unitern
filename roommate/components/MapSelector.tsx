@@ -11,7 +11,7 @@ import LocationMap from "@/components/LocationMap";
 import LocationSearch from "@/components/LocationSearch";
 import { requestRoadRoutes } from "@/features/commute/client";
 import { compareCommuteModes } from "@/features/commute/service";
-import type { CommuteRoute } from "@/features/commute/types";
+import { isRoadRoutableMode, type CommuteRoute } from "@/features/commute/types";
 import type { Listing } from "@/features/listings/types";
 import {
   isInCityArea,
@@ -31,6 +31,7 @@ type Props = {
 
 type RoadRouteResult = {
   requestKey: string;
+  modesKey: string;
   routes: CommuteRoute[];
   unavailable: boolean;
 };
@@ -73,7 +74,7 @@ export default function MapSelector({ places, listings, savedListingIds, city, i
     return [...all, { id: selectedDestination.id, name: selectedDestination.shortLabel, category, coordinates: selectedDestination.coordinates, description: selectedDestination.label }];
   }, [audience, localCampuses, localPlaces, selectedDestination]);
   const routeRequestKey = selectedDestination
-    ? [selectedDestination.coordinates.longitude, selectedDestination.coordinates.latitude, selectedModes.join(","), ...visibleListings.map((home) => `${home.id}:${home.coordinates?.longitude},${home.coordinates?.latitude}`)].join("|")
+    ? [selectedDestination.coordinates.longitude, selectedDestination.coordinates.latitude, ...visibleListings.map((home) => `${home.id}:${home.coordinates?.longitude},${home.coordinates?.latitude}`)].join("|")
     : "";
   const routesByHome = Object.fromEntries(visibleListings.map((home) => [home.id, roadResults[home.id]?.requestKey === routeRequestKey ? roadResults[home.id].routes : []]));
   const roadRoutes: CommuteRoute[] = selectedHome ? routesByHome[selectedHome.id] ?? [] : [];
@@ -83,7 +84,8 @@ export default function MapSelector({ places, listings, savedListingIds, city, i
     ? compareCommuteModes(selectedHome.coordinates, selectedDestination.coordinates, selectedModes, maxCommuteMinutes)
     : [];
   const routeEligible = selectedHome && visibleListings.slice(0, 10).some((home) => home.id === selectedHome.id);
-  const routesLoading = Boolean(routeEligible && selectedHome && routeRequestKey && roadResults[selectedHome.id]?.requestKey !== routeRequestKey);
+  const routesLoading = Boolean(routeEligible && selectedHome && routeRequestKey && selectedModes.some(isRoadRoutableMode)
+    && (roadResults[selectedHome.id]?.requestKey !== routeRequestKey || roadResults[selectedHome.id]?.modesKey !== selectedModes.join(",")));
   const routesUnavailable = Boolean(selectedHome && roadResults[selectedHome.id]?.requestKey === routeRequestKey && roadResults[selectedHome.id].unavailable);
   const [displayMode, setDisplayMode] = useState<CommuteMode>("bike");
   const effectiveDisplayMode = selectedModes.includes(displayMode) ? displayMode : selectedModes[0];
@@ -92,6 +94,14 @@ export default function MapSelector({ places, listings, savedListingIds, city, i
   useEffect(() => {
     if (!routeRequestKey || !selectedDestination) return;
     const controller = new AbortController();
+    function storeResult(homeId: number, routes: CommuteRoute[], unavailable: boolean) {
+      setRoadResults((current) => {
+        const previous = current[homeId]?.requestKey === routeRequestKey ? current[homeId].routes : [];
+        const merged = new Map(previous.map((route) => [route.mode, route]));
+        routes.forEach((route) => merged.set(route.mode, route));
+        return { ...current, [homeId]: { requestKey: routeRequestKey, modesKey: selectedModes.join(","), routes: [...merged.values()], unavailable } };
+      });
+    }
     // A bounded sequential preview prevents a city with many homes from flooding
     // the community routing service. Other homes retain labeled estimates.
     async function calculate() {
@@ -100,10 +110,10 @@ export default function MapSelector({ places, listings, savedListingIds, city, i
         try {
           const routes = await requestRoadRoutes({ origin: home.coordinates, destination: selectedDestination!.coordinates, modes: selectedModes, signal: controller.signal });
           if (controller.signal.aborted) break;
-          setRoadResults((current) => ({ ...current, [home.id]: { requestKey: routeRequestKey, routes, unavailable: false } }));
+          storeResult(home.id, routes, false);
         } catch {
           if (controller.signal.aborted) break;
-          setRoadResults((current) => ({ ...current, [home.id]: { requestKey: routeRequestKey, routes: [], unavailable: true } }));
+          storeResult(home.id, [], true);
         }
       }
     }
