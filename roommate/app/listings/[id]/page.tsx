@@ -6,7 +6,9 @@ import SafetyActions from "@/components/SafetyActions";
 import SaveItemButton from "@/components/SaveItemButton";
 import { hasUserBlocked, isEitherUserBlocked } from "@/features/blocks/service";
 import { getListingById } from "@/features/listings/service";
-import { formatDistance, getCampus } from "@/features/places/service";
+import { formatDistance } from "@/features/places/service";
+import { campusChoices, cityChoices } from "@/features/location-search/catalog";
+import { isInCityArea } from "@/features/location-search/city-preference";
 import { getCurrentUser } from "@/lib/current-user";
 import { isItemSaved } from "@/features/saved-items/service";
 
@@ -21,7 +23,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
   if (!listing) {
     notFound();
   }
-  const campus = await getCampus();
+  const localCity = cityChoices.find((city) => isInCityArea(listing.coordinates, city));
+  const campus = campusChoices.find((campus) => campus.cityId === localCity?.id);
   const currentUser = await getCurrentUser();
   const isSaved = currentUser
     ? await isItemSaved(currentUser.id, { targetType: "listing", targetId: listing.id })
@@ -60,15 +63,17 @@ export default async function ListingDetailPage({ params }: PageProps) {
           <li>{listing.petsAllowed ? "Pets allowed" : "Pets not allowed"}</li>
           <li>Posted by <strong>{listing.postedBy}</strong></li>
           <li>
-            {listing.coordinates ? (
-              <><strong>{formatDistance(listing.coordinates, campus.coordinates)}</strong> from SJSU</>
+            {listing.coordinates && campus ? (
+              <><strong>{formatDistance(listing.coordinates, campus.coordinates)}</strong> direct distance from {campus.shortLabel}</>
             ) : (
-              "Map distance will be available after the listing address is verified."
+              "Choose a destination in the area guide to compare commutes."
             )}
           </li>
         </ul>
       </article>
-      {currentUser?.id === listing.ownerId ? (
+      {listing.isDemo ? (
+        <p className="owner-notice">Sample listing — not a real rental. You can save it and compare commutes. Contact is unavailable for this fictional posting.</p>
+      ) : currentUser?.id === listing.ownerId ? (
         <p className="owner-notice">This is your listing. <Link href={`/listings/${listing.id}/edit`}>Edit its details</Link> or manage its status from your dashboard.</p>
       ) : currentUser ? (
         <>{contactBlocked ? <p className="owner-notice">Contact is disabled because one account has blocked the other.</p> : <InquiryForm listingId={listing.id} />}<SafetyActions targetType="listing" targetId={listing.id} ownerId={listing.ownerId} initiallyBlocked={ownerBlocked} /></>

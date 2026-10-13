@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { campusChoices, cityChoices } from "@/features/location-search/catalog";
+import { compareHomeCommutes } from "@/features/commute/matches";
 
 import CommuteComparison from "@/components/CommuteComparison";
 import LocationMap from "@/components/LocationMap";
@@ -10,7 +14,6 @@ import { compareCommuteModes } from "@/features/commute/service";
 import type { CommuteRoute } from "@/features/commute/types";
 import type { Listing } from "@/features/listings/types";
 import {
-  defaultCity,
   isInCityArea,
   type CityPreference,
 } from "@/features/location-search/city-preference";
@@ -20,7 +23,9 @@ import type { CommuteMode } from "@/features/preferences/types";
 
 type Props = {
   places: Place[];
-  savedListings: Listing[];
+  listings: Listing[];
+  savedListingIds: number[];
+  initialCampusId?: string;
   city: CityPreference;
 };
 
@@ -42,110 +47,86 @@ function placeAsSearchResult(place: Place): LocationSearchResult {
   };
 }
 
-export default function MapSelector({ places, savedListings, city }: Props) {
-  const initialCampus = places.find((place) => place.category === "Campus") ?? places[0];
+export default function MapSelector({ places, listings, savedListingIds, city, initialCampusId }: Props) {
+  const router = useRouter();
   const [audience, setAudience] = useState<"student" | "intern">("student");
+  const localPlaces = useMemo(() => places.filter((place) => isInCityArea(place.coordinates, city)), [city, places]);
+  const localCampuses = useMemo(() => campusChoices.filter((campus) => isInCityArea(campus.coordinates, city)), [city]);
   const [selectedDestination, setSelectedDestination] = useState<LocationSearchResult | null>(
-    city.id === defaultCity.id && initialCampus ? placeAsSearchResult(initialCampus) : null,
+    localCampuses.find((campus) => campus.id === initialCampusId) ?? localCampuses[0] ?? (localPlaces.find((place) => place.category === "Campus") ? placeAsSearchResult(localPlaces.find((place) => place.category === "Campus")!) : null),
   );
+  const [searchRevision, setSearchRevision] = useState(0);
+  const [cityStatus, setCityStatus] = useState("");
   const [selectedModes, setSelectedModes] = useState<CommuteMode[]>(["transit", "bike"]);
   const [maxCommuteMinutes, setMaxCommuteMinutes] = useState(30);
-  const [roadRouteResult, setRoadRouteResult] = useState<RoadRouteResult>({
-    requestKey: "",
-    routes: [],
-    unavailable: false,
-  });
-
-  const isStarterCity = city.id === defaultCity.id;
-  const localDestinations = useMemo(
-    () => places.filter((place) =>
-      audience === "student" ? place.category === "Campus" : place.category === "Company",
-    ),
-    [audience, places],
-  );
+  const [roadResults, setRoadResults] = useState<Record<number, RoadRouteResult>>({});
+  const visibleListings = useMemo(() => listings.filter((listing) => isInCityArea(listing.coordinates, city)), [city, listings]);
+  const [selectedHomeId, setSelectedHomeId] = useState<number | null>(visibleListings.find((listing) => savedListingIds.includes(listing.id))?.id ?? visibleListings[0]?.id ?? null);
+  const selectedHome = visibleListings.find((listing) => listing.id === selectedHomeId) ?? null;
+  const localDestinations = audience === "student" ? localCampuses : localPlaces.filter((place) => place.category === "Company").map(placeAsSearchResult);
   const mapPlaces = useMemo(() => {
-    const basePlaces = isStarterCity ? places : [];
-    if (!selectedDestination || basePlaces.some((place) => place.id === selectedDestination.id)) {
-      return basePlaces;
-    }
-
+    const base = localPlaces.filter((place) => place.category !== "Campus");
+    const campuses: Place[] = localCampuses.map((campus) => ({ id: campus.id, name: campus.shortLabel, category: "Campus", coordinates: campus.coordinates, description: campus.label }));
+    const all = [...base, ...campuses];
+    if (!selectedDestination || all.some((place) => place.id === selectedDestination.id)) return all;
     const category: PlaceCategory = audience === "student" ? "Campus" : "Company";
-    return [...basePlaces, {
-      id: selectedDestination.id,
-      name: selectedDestination.shortLabel,
-      category,
-      coordinates: selectedDestination.coordinates,
-      description: selectedDestination.label,
-    }];
-  }, [audience, isStarterCity, places, selectedDestination]);
-  const visibleSavedListings = useMemo(
-    () => savedListings.filter((listing) => isInCityArea(listing.coordinates, city)),
-    [city, savedListings],
-  );
-  const [selectedHomeId, setSelectedHomeId] = useState<number | null>(
-    visibleSavedListings[0]?.id ?? null,
-  );
-  const selectedHome = visibleSavedListings.find((listing) => listing.id === selectedHomeId) ?? null;
-  const commuteEstimates = useMemo(
-    () => selectedHome?.coordinates && selectedDestination
-      ? compareCommuteModes(
-        selectedHome.coordinates,
-        selectedDestination.coordinates,
-        selectedModes,
-        maxCommuteMinutes,
-      )
-      : [],
-    [maxCommuteMinutes, selectedDestination, selectedHome, selectedModes],
-  );
-  const routeRequestKey = selectedHome?.coordinates && selectedDestination
-    ? [
-      selectedHome.coordinates.longitude,
-      selectedHome.coordinates.latitude,
-      selectedDestination.coordinates.longitude,
-      selectedDestination.coordinates.latitude,
-      selectedModes.join(","),
-    ].join("|")
-    : null;
-  const roadRoutes = routeRequestKey === roadRouteResult.requestKey
-    ? roadRouteResult.routes
+    return [...all, { id: selectedDestination.id, name: selectedDestination.shortLabel, category, coordinates: selectedDestination.coordinates, description: selectedDestination.label }];
+  }, [audience, localCampuses, localPlaces, selectedDestination]);
+  const routeRequestKey = selectedDestination
+    ? [selectedDestination.coordinates.longitude, selectedDestination.coordinates.latitude, selectedModes.join(","), ...visibleListings.map((home) => `${home.id}:${home.coordinates?.longitude},${home.coordinates?.latitude}`)].join("|")
+    : "";
+  const routesByHome = Object.fromEntries(visibleListings.map((home) => [home.id, roadResults[home.id]?.requestKey === routeRequestKey ? roadResults[home.id].routes : []]));
+  const roadRoutes: CommuteRoute[] = selectedHome ? routesByHome[selectedHome.id] ?? [] : [];
+  const matches = selectedDestination ? compareHomeCommutes(visibleListings, selectedDestination.coordinates, selectedModes, maxCommuteMinutes, routesByHome) : [];
+  const matchingHomes = matches.filter((match) => match.withinLimit);
+  const commuteEstimates = selectedHome?.coordinates && selectedDestination
+    ? compareCommuteModes(selectedHome.coordinates, selectedDestination.coordinates, selectedModes, maxCommuteMinutes)
     : [];
-  const routesLoading = Boolean(routeRequestKey)
-    && routeRequestKey !== roadRouteResult.requestKey;
-  const routesUnavailable = routeRequestKey === roadRouteResult.requestKey
-    && roadRouteResult.unavailable;
-  const displayedRoadRoute = selectedModes
-    .map((mode) => roadRoutes.find((route) => route.mode === mode))
-    .find((route): route is CommuteRoute => Boolean(route)) ?? null;
+  const routeEligible = selectedHome && visibleListings.slice(0, 10).some((home) => home.id === selectedHome.id);
+  const routesLoading = Boolean(routeEligible && selectedHome && routeRequestKey && roadResults[selectedHome.id]?.requestKey !== routeRequestKey);
+  const routesUnavailable = Boolean(selectedHome && roadResults[selectedHome.id]?.requestKey === routeRequestKey && roadResults[selectedHome.id].unavailable);
+  const [displayMode, setDisplayMode] = useState<CommuteMode>("bike");
+  const effectiveDisplayMode = selectedModes.includes(displayMode) ? displayMode : selectedModes[0];
+  const displayedRoadRoute = roadRoutes.find((route) => route.mode === effectiveDisplayMode) ?? null;
 
   useEffect(() => {
-    if (!routeRequestKey || !selectedHome?.coordinates || !selectedDestination) return;
+    if (!routeRequestKey || !selectedDestination) return;
+    const controller = new AbortController();
+    // A bounded sequential preview prevents a city with many homes from flooding
+    // the community routing service. Other homes retain labeled estimates.
+    async function calculate() {
+      for (const home of visibleListings.slice(0, 10)) {
+        if (controller.signal.aborted || !home.coordinates) break;
+        try {
+          const routes = await requestRoadRoutes({ origin: home.coordinates, destination: selectedDestination!.coordinates, modes: selectedModes, signal: controller.signal });
+          if (controller.signal.aborted) break;
+          setRoadResults((current) => ({ ...current, [home.id]: { requestKey: routeRequestKey, routes, unavailable: false } }));
+        } catch {
+          if (controller.signal.aborted) break;
+          setRoadResults((current) => ({ ...current, [home.id]: { requestKey: routeRequestKey, routes: [], unavailable: true } }));
+        }
+      }
+    }
+    void calculate();
+    return () => controller.abort();
+  }, [routeRequestKey, selectedDestination, selectedModes, visibleListings]);
 
-    const abortController = new AbortController();
-
-    requestRoadRoutes({
-      origin: selectedHome.coordinates,
-      destination: selectedDestination.coordinates,
-      modes: selectedModes,
-      signal: abortController.signal,
-    })
-      .then((routes) => setRoadRouteResult({
-        requestKey: routeRequestKey,
-        routes,
-        unavailable: false,
-      }))
-      .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        setRoadRouteResult({
-          requestKey: routeRequestKey,
-          routes: [],
-          unavailable: true,
-        });
-      });
-
-    return () => abortController.abort();
-  }, [routeRequestKey, selectedDestination, selectedHome, selectedModes]);
+  async function chooseDestination(destination: LocationSearchResult) {
+    setCityStatus("");
+    const nextCity = cityChoices.find((choice) => choice.id === destination.cityId);
+    if (nextCity && !isInCityArea(destination.coordinates, city)) {
+      setCityStatus(`Switching to ${nextCity.shortLabel}…`);
+      try {
+        const response = await fetch("/api/city-preference", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(nextCity) });
+        if (!response.ok) throw new Error("Could not save city");
+        router.replace(`/map?campus=${encodeURIComponent(destination.id)}`);
+        router.refresh();
+      } catch { setCityStatus(`Could not switch cities. Choose ${nextCity.shortLabel} on the homepage and try again.`); }
+    } else { setSelectedDestination(destination); }
+  }
 
   function toggleMode(mode: CommuteMode) {
+    setDisplayMode(mode);
     setSelectedModes((current) =>
       current.includes(mode)
         ? current.length > 1 ? current.filter((item) => item !== mode) : current
@@ -155,10 +136,9 @@ export default function MapSelector({ places, savedListings, city }: Props) {
 
   function changeAudience(option: "student" | "intern") {
     setAudience(option);
-    const nextDestination = places.find((place) =>
-      option === "student" ? place.category === "Campus" : place.category === "Company",
-    );
-    setSelectedDestination(isStarterCity && nextDestination ? placeAsSearchResult(nextDestination) : null);
+    const nextDestination = option === "student" ? localCampuses[0] : localPlaces.find((place) => place.category === "Company");
+    setSelectedDestination(nextDestination ? ("shortLabel" in nextDestination ? nextDestination : placeAsSearchResult(nextDestination)) : null);
+    setDisplayMode(option === "student" ? "bike" : "drive");
     setSelectedModes(option === "student" ? ["transit", "bike"] : ["transit", "drive"]);
   }
 
@@ -185,17 +165,20 @@ export default function MapSelector({ places, savedListings, city }: Props) {
         </div>
 
         <LocationSearch
-          key={`${audience}-${city.id}-${selectedDestination?.id ?? "empty"}`}
+          key={`${audience}-${city.id}-${searchRevision}`}
           kind="destination"
           label={audience === "student" ? "University or campus" : "Company or workplace"}
           placeholder={audience === "student" ? "Search universities…" : "Search employers…"}
           value={selectedDestination?.label ?? ""}
           proximity={city.coordinates}
           boundingBox={city.boundingBox}
-          onSelect={setSelectedDestination}
+          onInputChange={() => setSelectedDestination(null)}
+          onSelect={chooseDestination}
         />
 
-        {isStarterCity && localDestinations.length > 0 && (
+        <p className="commute-search-hint" role="status">{cityStatus || `Search in ${city.shortLabel}, or enter a campus shortcut such as UCLA or SJSU to switch cities.`}</p>
+
+        {localDestinations.length > 0 && (
           <div className="destination-quick-picks" aria-label="Suggested destinations">
             <span>Quick picks</span>
             <div>
@@ -204,9 +187,9 @@ export default function MapSelector({ places, savedListings, city }: Props) {
                   type="button"
                   key={place.id}
                   className={selectedDestination?.id === place.id ? "is-active" : ""}
-                  onClick={() => setSelectedDestination(placeAsSearchResult(place))}
+                  onClick={() => { setSearchRevision((current) => current + 1); void chooseDestination(place); }}
                 >
-                  {place.name}
+                  {place.shortLabel}
                 </button>
               ))}
             </div>
@@ -214,7 +197,7 @@ export default function MapSelector({ places, savedListings, city }: Props) {
         )}
 
         <label className="saved-home-picker" htmlFor="saved-home">
-          <span>Saved home to compare</span>
+          <span>Home to compare</span>
           <select
             id="saved-home"
             value={selectedHomeId ?? ""}
@@ -222,10 +205,10 @@ export default function MapSelector({ places, savedListings, city }: Props) {
               event.target.value ? Number(event.target.value) : null,
             )}
           >
-            <option value="">Choose a saved home</option>
-            {visibleSavedListings.map((listing) => (
+            <option value="">Choose an available home</option>
+            {visibleListings.map((listing) => (
               <option key={listing.id} value={listing.id}>
-                {listing.title} · ${listing.rent}/month
+                {savedListingIds.includes(listing.id) ? "Saved · " : ""}{listing.title} · ${listing.rent}/month
               </option>
             ))}
           </select>
@@ -261,6 +244,16 @@ export default function MapSelector({ places, savedListings, city }: Props) {
           />
         </label>
 
+        {selectedDestination && <section className="commute-matches" aria-label="Homes matching your commute">
+          <h3 aria-live="polite">{matchingHomes.length} of {matches.length} homes within {maxCommuteMinutes} min</h3>
+          <p>At least one of your selected travel modes must fit. Times update as street routes arrive.</p>
+          {matchingHomes.map(({ listing, fastest }) => <button key={listing.id} type="button" aria-pressed={selectedHomeId === listing.id} onClick={() => { setSelectedHomeId(listing.id); setDisplayMode(fastest.mode); }}>
+            <strong>{listing.title}</strong><span>{fastest.durationMinutes} min · {fastest.mode} · {fastest.routed ? "street route" : "approximate"}</span>
+          </button>)}
+          {matches.length > 0 && matchingHomes.length === 0 && <p>No homes fit yet. Increase the limit or add another travel mode.</p>}
+          {matches.length === 0 && <p>No mapped homes in this city yet. <Link href="/#listings">Choose another city</Link>.</p>}
+        </section>}
+
         <div className="commute-summary">
           <span>City</span>
           <strong>{city.shortLabel}</strong>
@@ -280,6 +273,12 @@ export default function MapSelector({ places, savedListings, city }: Props) {
           routesUnavailable={routesUnavailable}
         />
 
+        {selectedHome && <label className="saved-home-picker">Route shown on map
+          <select value={selectedModes.includes(displayMode) ? displayMode : selectedModes[0]} onChange={(event) => setDisplayMode(event.target.value as CommuteMode)}>
+            {selectedModes.map((mode) => <option key={mode} value={mode}>{mode}</option>)}
+          </select>
+        </label>}
+
         <div className="area-place-list" aria-label={`Places in ${city.shortLabel}`}>
           <div>
             <p className="eyebrow">Places in {city.shortLabel}</p>
@@ -298,7 +297,7 @@ export default function MapSelector({ places, savedListings, city }: Props) {
       <LocationMap
         places={mapPlaces}
         highlightedPlaceId={selectedDestination?.id ?? ""}
-        savedListings={visibleSavedListings}
+        savedListings={selectedDestination ? visibleListings.filter((home) => matchingHomes.some((match) => match.listing.id === home.id) || home.id === selectedHomeId) : visibleListings}
         selectedHomeId={selectedHomeId}
         onSelectSavedHome={setSelectedHomeId}
         focusCoordinates={selectedDestination?.coordinates ?? city.coordinates}

@@ -40,7 +40,9 @@ function isLineCoordinates(value: unknown): value is [number, number][] {
       Array.isArray(coordinate)
       && coordinate.length >= 2
       && Number.isFinite(coordinate[0])
-      && Number.isFinite(coordinate[1]),
+      && Number.isFinite(coordinate[1])
+      && Math.abs(coordinate[0]) <= 180
+      && Math.abs(coordinate[1]) <= 90,
     );
 }
 
@@ -62,6 +64,7 @@ export async function getRoadRoute(
   const response = await fetchImplementation(url, {
     headers: { Accept: "application/json" },
     cache: "no-store",
+    signal: AbortSignal.timeout(8_000),
   });
   const body = await response.json() as MapboxDirectionsResponse;
   const route = body.routes?.[0];
@@ -72,6 +75,8 @@ export async function getRoadRoute(
     || !route
     || !Number.isFinite(route.distance)
     || !Number.isFinite(route.duration)
+    || route.distance! < 0
+    || route.duration! < 0
     || route.geometry?.type !== "LineString"
     || !isLineCoordinates(route.geometry.coordinates)
   ) {
@@ -90,6 +95,38 @@ export async function getRoadRoute(
       coordinates: route.geometry.coordinates,
     },
     provider: "mapbox",
+  };
+}
+
+export async function getOpenStreetMapRoute(
+  origin: Coordinates,
+  destination: Coordinates,
+  mode: RoadRoutableMode,
+  requestOrigin: string,
+  fetchImplementation: typeof fetch = fetch,
+): Promise<CommuteRoute> {
+  const profile = mode === "bike" ? "bike" : mode === "walk" ? "foot" : "car";
+  const points = `${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}`;
+  const url = new URL(`https://routing.openstreetmap.de/routed-${profile}/route/v1/driving/${points}`);
+  url.searchParams.set("overview", "full");
+  url.searchParams.set("geometries", "geojson");
+  url.searchParams.set("steps", "false");
+  const response = await fetchImplementation(url, {
+    headers: { Accept: "application/json", "User-Agent": `Unitern/1.0 (${requestOrigin})`, Referer: requestOrigin },
+    signal: AbortSignal.timeout(8_000),
+    cache: "no-store",
+  });
+  const body = await response.json() as MapboxDirectionsResponse;
+  const route = body.routes?.[0];
+  if (!response.ok || body.code !== "Ok" || !route || !Number.isFinite(route.distance) || route.distance! < 0 || !Number.isFinite(route.duration) || route.duration! < 0 || route.geometry?.type !== "LineString" || !isLineCoordinates(route.geometry.coordinates)) {
+    throw new Error("Street routing is temporarily unavailable.");
+  }
+  return {
+    mode,
+    distanceMiles: Number((route.distance! / 1609.344).toFixed(1)),
+    durationMinutes: Math.max(1, Math.round(route.duration! / 60) + fixedMinutesByMode[mode]),
+    geometry: { type: "LineString", coordinates: route.geometry.coordinates },
+    provider: "osrm",
   };
 }
 

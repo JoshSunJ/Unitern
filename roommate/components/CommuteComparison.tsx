@@ -28,7 +28,7 @@ export default function CommuteComparison({
         <p className="eyebrow">Commute preview</p>
         <strong>
           {!hasHome
-            ? "Choose a saved home to compare."
+            ? "Choose an available home to compare."
             : "Search for a campus or workplace to compare."}
         </strong>
       </div>
@@ -46,7 +46,7 @@ export default function CommuteComparison({
       </div>
 
       <div className="commute-estimate-list">
-        {estimates.map((estimate) => {
+        {[...estimates].sort((a, b) => (roadRoutes.find((route) => route.mode === a.mode)?.durationMinutes ?? a.durationMinutes) - (roadRoutes.find((route) => route.mode === b.mode)?.durationMinutes ?? b.durationMinutes)).map((estimate) => {
           const roadRoute = roadRoutes.find((route) => route.mode === estimate.mode);
           const distanceMiles = roadRoute?.distanceMiles ?? estimate.distanceMiles;
           const durationMinutes = roadRoute?.durationMinutes ?? estimate.durationMinutes;
@@ -63,7 +63,7 @@ export default function CommuteComparison({
               </div>
               <b>{durationMinutes} min</b>
               <small>{withinLimit ? "Within your limit" : "Over your limit"}</small>
-              <em>{roadRoute ? "Road route" : "Planning estimate"}</em>
+              <em>{roadRoute ? "Street route" : "Approximate estimate"}</em>
             </article>
           );
         })}
@@ -80,8 +80,9 @@ export default function CommuteComparison({
       </p>
 
       <p className="commute-comparison__disclaimer">
-        Road routes use the provider network but not live traffic. Transit remains an estimate until a schedule-aware provider is added.
+        Street times exclude live traffic, parking and delays. Transit is approximate, based on distance and typical speeds, without schedules. Dashed map lines show direct distance only.
       </p>
+      {roadRoutes.some((route) => route.provider === "osrm") && <p className="commute-routing-credit">Routes: <a href="https://routing.openstreetmap.de/about.html" target="_blank" rel="noreferrer">FOSSGIS / OSRM</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a> · <a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noreferrer">Fix the map</a></p>}
     </section>
   );
 }

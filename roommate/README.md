@@ -331,3 +331,13 @@ is not operationally production-ready until managed PostgreSQL backups and TLS,
 real Resend credentials and a verified sender domain, durable S3-compatible
 photo storage, restricted MapTiler keys, HTTPS hosting, monitoring, and a tested
 rollback procedure all exist outside the repository.
+
+### City search and commute preview
+
+The homepage city selector stores the selected city in the existing city cookie. Other-city searches return municipalities and provider-designated cities only; county and neighborhood results are excluded. Campus shortcuts currently include SJSU, UCLA, USC, SFSU, and UC Berkeley; selecting a shortcut in another city switches the city. Campus pins are approximate centers, not building entrances.
+
+The area guide compares active mapped homes, including unsaved homes. A home matches when at least one selected mode is within the slider limit. Walking, cycling, driving, and ride share use street routes when available; transit and provider failures use clearly labeled distance/speed estimates. Changing the slider does not request new routes.
+
+Without `MAPBOX_ACCESS_TOKEN`, a free FOSSGIS/OSRM preview is used. Requests are globally paced through database counters to at most one every 1.1 seconds, limited to 200 provider calls/day, and cached for one hour (200 entries per instance). Preview requests cover at most the first ten homes in a city; additional homes retain approximate estimates. It is not a guaranteed production routing service and does not include traffic or transit schedules. `ROAD_ROUTING_PROVIDER=disabled` disables it for offline tests. See the [provider usage policy](https://routing.openstreetmap.de/about.html).
+
+`tsx scripts/seed-demo-listings.ts` creates or updates exactly five clearly labeled samples (three in San Jose, two in Los Angeles), without deleting other listings. It requires `SEED_TARGET=local` with a loopback database, or `SEED_TARGET=unitern-staging-507303-n7`, the canonical staging `AUTH_URL`, and `EXPECTED_DATABASE_HOST` matching the selected Neon database. The fictional owner has no login credentials or verified affiliation. Samples support browsing, saves, and commute comparisons; the UI and inquiry service disable contact.

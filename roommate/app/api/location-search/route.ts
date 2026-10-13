@@ -4,6 +4,7 @@ import { LocationSearchProviderError, searchLocations } from "@/features/locatio
 import type { LocationSearchKind } from "@/features/location-search/types";
 import { normalizeEnvironmentValue } from "@/lib/environment-value";
 import { logOperationalError } from "@/lib/operational-log";
+import { knownCampusResults } from "@/features/location-search/catalog";
 
 const validKinds = new Set<LocationSearchKind>([
   "city",
@@ -25,6 +26,9 @@ export async function GET(request: NextRequest) {
   if (!validKinds.has(requestedKind as LocationSearchKind)) {
     return Response.json({ error: "Unsupported search type." }, { status: 400 });
   }
+
+  const campuses = knownCampusResults({ query, kind: requestedKind as LocationSearchKind });
+  if (campuses.length) return Response.json({ results: campuses });
 
   const apiKey = normalizeEnvironmentValue(process.env.MAPTILER_API_KEY);
   if (!apiKey) {

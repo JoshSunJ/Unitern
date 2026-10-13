@@ -11,6 +11,7 @@ export interface ListingPhoto {
 }
 
 export interface Listing {
+  isDemo?: boolean;
   id: number;
   ownerId: number;
   title: string;
@@ -45,5 +46,5 @@ export interface ListingFilters {
 
 export type CreateListingInput = Omit<
   Listing,
-  "id" | "ownerId" | "postedBy" | "status" | "photos" | "coordinates"
+  "id" | "ownerId" | "postedBy" | "status" | "photos" | "coordinates" | "isDemo"
 > & { coordinates: Coordinates };

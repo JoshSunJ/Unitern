@@ -45,7 +45,7 @@ export default function MapInner({
   const [mapReady, setMapReady] = useState(false);
   const [selectedMarker, setSelectedMarker] = useState<SelectedMarker>(null);
   const highlightedPlace = useMemo(
-    () => places.find((place) => place.id === highlightedPlaceId) ?? places[0],
+    () => places.find((place) => place.id === highlightedPlaceId),
     [highlightedPlaceId, places],
   );
   const selectedPlace = selectedMarker?.kind === "place"
@@ -110,7 +110,7 @@ export default function MapInner({
         onLoad={() => setMapReady(true)}
         onStyleData={() => setMapReady(true)}
         onClick={() => setSelectedMarker(null)}
-        aria-label="Area map showing destinations and saved homes"
+        aria-label="Area map showing destinations and available homes"
       >
         <NavigationControl position="top-right" showCompass={false} />
 
@@ -173,8 +173,8 @@ export default function MapInner({
                 onSelectSavedHome(listing.id);
               }}
             >
-            <button type="button" className={`area-marker area-marker--saved${selectedHomeId === listing.id ? " area-marker--selected-home" : ""}`} aria-label={`Saved home: ${listing.title}`}>
-              ♥
+            <button type="button" className={`area-marker area-marker--saved${selectedHomeId === listing.id ? " area-marker--selected-home" : ""}`} aria-label={`Home: ${listing.title}`}>
+              ⌂
             </button>
           </Marker>
         )] : [])}
@@ -206,7 +206,7 @@ export default function MapInner({
             onClose={() => setSelectedMarker(null)}
           >
             <article className="area-popup">
-              <p>Saved home</p>
+              <p>Available home</p>
               <h3>{selectedListing.title}</h3>
               <span>${selectedListing.rent}/month</span>
               <Link href={`/listings/${selectedListing.id}`}>View home ↗</Link>
@@ -217,7 +217,7 @@ export default function MapInner({
 
       <div className="area-map-legend">
         <span><i className="legend-destination" />Destination</span>
-        <span><i className="legend-home" />Saved home</span>
+        <span><i className="legend-home" />Home</span>
         {roadRoute && <span><i className="legend-route" />{roadRoute.mode} route</span>}
       </div>
     </div>

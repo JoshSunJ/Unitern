@@ -72,7 +72,7 @@ test("a mobile area question retains its draft during quota errors and safely re
   await page.getByRole("button", { name: "Open housing guide" }).click();
   const dialog = page.getByRole("dialog", { name: "Unitern housing guide" });
   await dialog.getByRole("combobox", { name: "Search an area" }).fill("Downtown");
-  await dialog.getByRole("option", { name: /Downtown/ }).click();
+  await dialog.getByRole("listbox").getByRole("option", { name: /Downtown/ }).click();
   await dialog.getByRole("checkbox", { name: /I’m 18/ }).click();
   await dialog.getByLabel("Your housing question").fill("What should I know about this area?");
   await dialog.getByRole("button", { name: "Send housing question" }).click();
