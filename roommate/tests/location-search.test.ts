@@ -25,7 +25,7 @@ test("US city search restricts and normalizes provider parameters", () => {
   assert.equal(url.searchParams.get("country"), "us");
   assert.equal(
     url.searchParams.get("types"),
-    "municipality,subregion,municipal_district,locality,place",
+    "municipality,subregion,place",
   );
   assert.equal(url.searchParams.get("fuzzyMatch"), "false");
   assert.equal(url.searchParams.get("key"), "test-key");
@@ -115,4 +115,41 @@ test("city search prefers an exact administrative city over similarly named plac
 
   assert.deepEqual(results.map(({ shortLabel }) => shortLabel), ["Chicago"]);
   assert.equal(results[0]?.type, "municipality");
+});
+
+test("campus shortcuts resolve exactly, including punctuation, accents, and an unrelated city scope", async () => {
+  for (const [query, campus] of [["UCLA", "unitern.ucla"], ["sjsu", "unitern.sjsu"], ["U.C.L.A.", "unitern.ucla"], ["San José State University", "unitern.sjsu"]]) {
+    const results = await searchLocations({ query, kind: "destination", proximity: { latitude: 40, longitude: -73 }, boundingBox: [-74, 39, -72, 41] }, "", "https://unitern.example", async () => { throw new Error("Known campuses must not depend on the provider."); });
+    assert.equal(results.length, 1);
+    assert.equal(results[0].id, campus);
+  }
+});
+
+test("city results exclude counties, neighborhoods, and POIs", async () => {
+  const fetcher = (async () => Response.json({ features: [
+    { id: "subregion.county", text: "Los Angeles County", place_type: ["subregion"], center: [-118.2, 34] },
+    { id: "poi.ucla", text: "UCLA", place_type: ["poi"], center: [-118.445, 34.069] },
+    { id: "municipality.la", text: "Los Angeles", place_type: ["municipality"], center: [-118.24, 34.052] },
+  ] })) as typeof fetch;
+  const results = await searchLocations({ query: "Los Angeles", kind: "city" }, "test", "https://unitern.example", fetcher);
+  assert.deepEqual(results.map((result) => result.id), ["municipality.la"]);
+});
+
+test("ordinary destination results cannot escape the selected city bounds", async () => {
+  const fetcher = (async () => Response.json({ features: [
+    { id: "poi.other", text: "College", place_type: ["poi"], center: [-73, 40] },
+    { id: "poi.local", text: "College", place_type: ["poi"], center: [-121.9, 37.33] },
+  ] })) as typeof fetch;
+  const results = await searchLocations({ query: "College", kind: "destination", proximity: { latitude: 37.33, longitude: -121.9 }, boundingBox: [-122, 37.1, -121.6, 37.5] }, "test", "https://unitern.example", fetcher);
+  assert.deepEqual(results.map((result) => result.id), ["poi.local"]);
+});
+
+test("consolidated cities such as New York remain searchable while counties and hamlets are excluded", async () => {
+  const fetcher = (async () => Response.json({ features: [
+    { id: "subregion.county", text: "New York County", place_type: ["subregion"], properties: { place_designation: "county" }, center: [-74, 40.7] },
+    { id: "place.hamlet", text: "New York", place_type: ["place"], properties: { place_designation: "hamlet" }, center: [-87, 30] },
+    { id: "subregion.nyc", text: "New York", place_type: ["subregion"], properties: { place_designation: "city" }, center: [-74.006, 40.7127] },
+  ] })) as typeof fetch;
+  const results = await searchLocations({ query: "New York", kind: "city" }, "test", "https://unitern.example", fetcher);
+  assert.deepEqual(results.map((result) => result.id), ["subregion.nyc"]);
 });

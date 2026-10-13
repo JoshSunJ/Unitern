@@ -58,6 +58,7 @@ export default async function Home({ searchParams }: PageProps) {
               <p className="eyebrow">Student & intern living, reimagined</p>
               <h1 id="home-title">Find your place.<br /><em>Make the city yours.</em></h1>
               <p>A home for your next chapter. Find housing and explore the places that make a new city feel like you.</p>
+              <HomeCitySearch city={city} />
               <div className="hero-actions">
                 <a className="button button--primary" href="#listings">Explore homes <span aria-hidden="true">↗</span></a>
                 <Link className="button button--quiet" href="/map">Know your route <span aria-hidden="true">→</span></Link>
@@ -107,7 +108,6 @@ export default async function Home({ searchParams }: PageProps) {
               <p className="result-count"><strong>{listings.length}</strong> places found</p>
             </div>
 
-            <HomeCitySearch city={city} />
             <ListingFilters filters={filters} locations={locations} />
 
             <ListingWorkspace

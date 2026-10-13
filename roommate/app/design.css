@@ -156,3 +156,24 @@ html { scroll-padding-top: 110px; }
 }
 .google-sign-in button { display: inline-flex; gap: .7rem; align-items: center; background: #fff; color: var(--ink); border: 1px solid var(--line); justify-self: stretch; justify-content: center; }
 .location-search__results [aria-selected="true"] button { background: var(--blue); }
+
+/* City selection and commute planning. */
+.hero-copy .home-city-search { max-width: 450px; margin: 1.4rem auto 0; padding: 1rem 1.2rem; text-align: left; border: 1px solid var(--ink); border-radius: 12px; background: var(--night); box-shadow: 0 3px 0 rgb(32 33 28 / 9%); }
+.city-select-label { display: grid; gap: 0.5rem; font-size: 0.85rem; font-weight: 600; }
+.city-select-label select { width: 100%; min-height: 46px; border: 1px solid var(--line); border-radius: 7px; padding: 0.6rem; background: var(--night); color: var(--ink); font: inherit; }
+.home-city-search > p { margin: 0.5rem 0 0; font-size: 0.75rem; color: var(--ink-muted); }
+.home-city-search .location-search { margin-top: 0.9rem; }
+.hero--home:has(.home-city-search) { min-height: 990px; }
+.explore-heading .home-city-search { width: min(100%, 440px); }
+.commute-search-hint, .commute-routing-credit { margin: 0; font-size: 0.72rem; line-height: 1.5; color: var(--ink-muted); }
+.commute-matches { display: grid; gap: 0.5rem; }
+.commute-matches h3 { margin: 0; font-size: 1rem; }
+.commute-matches p { margin: 0; font-size: 0.72rem; line-height: 1.5; color: var(--ink-muted); }
+.commute-matches button { display: grid; gap: 0.3rem; width: 100%; text-align: left; border: 1px solid var(--line); border-radius: 8px; padding: 0.8rem; color: var(--ink); background: var(--night); cursor: pointer; }
+.commute-matches button[aria-pressed="true"] { border-color: var(--ink); background: #e6d2f5; }
+.commute-matches button strong { font-size: 0.8rem; }
+.commute-matches button span { font-size: 0.72rem; color: var(--ink-muted); }
+.location-map { position: sticky; top: 108px; align-self: start; height: min(780px, calc(100dvh - 130px)); min-height: 440px; }
+@media (max-width: 700px) { .hero--home:has(.home-city-search) { min-height: 930px; } .location-map { position: relative; top: auto; height: 480px; min-height: 0; } }
+.map-experience { overflow: clip; }
+.map-preference-panel { overflow: visible; }

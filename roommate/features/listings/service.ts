@@ -3,6 +3,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import type { CurrentUser } from "@/lib/current-user";
 import { isInCityArea } from "@/features/location-search/city-preference";
 import type { CreateListingInput, Listing, ListingFilters } from "./types";
+import { DEMO_OWNER_EMAIL } from "./demo-data";
 
 const listingWithOwner = {
   include: { owner: true, photos: { orderBy: { position: "asc" as const } } },
@@ -15,6 +16,7 @@ function toListing(record: ListingRecord | null): Listing | undefined {
 
   return {
     id: record.id,
+    isDemo: record.owner.email === DEMO_OWNER_EMAIL,
     ownerId: record.ownerId,
     title: record.title,
     rent: record.rent,

@@ -116,3 +116,20 @@ export async function markE2EAccountAffiliationVerified() {
     await pool.end();
   }
 }
+
+export async function createCommuteE2EListings() {
+  const pool = database();
+  try {
+    const result = await pool.query<{ id: number }>(`INSERT INTO "Listing" ("title", "rent", "location", "description", "bedrooms", "bathroomType", "availableFrom", "postedBy", "ownerId", "latitude", "longitude", "updatedAt")
+      SELECT sample.title, 1200, 'San Jose', 'Commute browser test fixture', 1, 'Private', '2027-01-01', 'Marketplace Owner', u.id, sample.lat, sample.lon, NOW()
+      FROM "User" u CROSS JOIN (VALUES ('E2E commute nearby', 37.33, -121.89), ('E2E commute farther', 37.305, -121.9)) AS sample(title, lat, lon)
+      WHERE u.email = $1 RETURNING "id"`, [E2E_MARKETPLACE_OWNER_EMAIL]);
+    return result.rows.map((row) => row.id);
+  } finally { await pool.end(); }
+}
+
+export async function removeCommuteE2EListings(ids: number[]) {
+  const pool = database();
+  try { await pool.query(`DELETE FROM "Listing" WHERE "id" = ANY($1::int[]) AND "ownerId" IN (SELECT "id" FROM "User" WHERE "email" = $2)`, [ids, E2E_MARKETPLACE_OWNER_EMAIL]); }
+  finally { await pool.end(); }
+}

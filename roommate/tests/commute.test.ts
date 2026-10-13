@@ -105,3 +105,36 @@ test("ride-share routing adds pickup time to the driving route", async () => {
 
   assert.equal(route.durationMinutes, 12);
 });
+
+test("free street routing uses distinct pedestrian, bicycle, and car networks", async () => {
+  const { getOpenStreetMapRoute } = await import("../features/commute/routing");
+  for (const [mode, profile] of [["walk", "foot"], ["bike", "bike"], ["drive", "car"], ["ride share", "car"]] as const) {
+    let url = "";
+    const route = await getOpenStreetMapRoute(downtownSanJose, northSanJose, mode, "https://unitern.example", async (input, init) => {
+      url = String(input);
+      assert.match(new Headers(init?.headers).get("User-Agent") ?? "", /Unitern/);
+      assert.ok(init?.signal);
+      return Response.json({ code: "Ok", routes: [{ distance: 1609.344, duration: 600, geometry: { type: "LineString", coordinates: [[-121.88, 37.33], [-121.92, 37.37]] } }] });
+    });
+    assert.match(url, new RegExp(`routed-${profile}/`));
+    assert.equal(route.provider, "osrm");
+    assert.equal(route.distanceMiles, 1);
+    assert.equal(route.durationMinutes, mode === "ride share" ? 17 : 10);
+  }
+});
+
+test("street routing rejects invalid provider routes instead of displaying made-up times", async () => {
+  const { getOpenStreetMapRoute } = await import("../features/commute/routing");
+  await assert.rejects(getOpenStreetMapRoute(downtownSanJose, northSanJose, "walk", "https://unitern.example", async () => Response.json({ code: "Ok", routes: [{ distance: -1, duration: -60 }] })), /unavailable/);
+});
+
+test("commute matches honor road times, selected modes, and changes to the slider", async () => {
+  const { compareHomeCommutes } = await import("../features/commute/matches");
+  const homes = [{ id: 1, coordinates: downtownSanJose }, { id: 2, coordinates: northSanJose }] as import("../features/listings/types").Listing[];
+  const geometry = { type: "LineString" as const, coordinates: [[-121.88, 37.33], [-121.92, 37.37]] as [number, number][] };
+  const routes = { 1: [{ mode: "bike" as const, durationMinutes: 8, distanceMiles: 1, geometry, provider: "osrm" as const }], 2: [{ mode: "bike" as const, durationMinutes: 45, distanceMiles: 5, geometry, provider: "osrm" as const }] };
+  const tight = compareHomeCommutes(homes, northSanJose, ["bike"], 10, routes);
+  assert.deepEqual(tight.filter((match) => match.withinLimit).map((match) => match.listing.id), [1]);
+  assert.equal(compareHomeCommutes(homes, northSanJose, ["bike"], 60, routes).filter((match) => match.withinLimit).length, 2);
+  assert.equal(compareHomeCommutes(homes, northSanJose, ["walk"], 60, routes)[0].fastest.routed, false);
+});

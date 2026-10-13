@@ -9,6 +9,7 @@ export type LocationSearchResult = {
   type: string;
   coordinates: Coordinates;
   boundingBox?: [number, number, number, number];
+  cityId?: string;
 };
 
 export type LocationSearchInput = {

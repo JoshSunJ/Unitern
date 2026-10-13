@@ -25,6 +25,7 @@ export default defineConfig({
       AUTH_URL: "http://localhost:3000",
       AUTH_SECRET: process.env.AUTH_SECRET || "e2e-only-secret-with-at-least-32-characters",
       EMAIL_PROVIDER: "preview",
+      ROAD_ROUTING_PROVIDER: "disabled",
       AUTH_GOOGLE_ID: "unitern-browser-test.apps.googleusercontent.com",
       AUTH_GOOGLE_SECRET: "local-browser-test-only",
       GEMINI_API_KEY: "local-browser-test-only",

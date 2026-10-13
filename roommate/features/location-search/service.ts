@@ -3,6 +3,8 @@ import type {
   LocationSearchResult,
 } from "@/features/location-search/types";
 import { normalizeEnvironmentValue } from "@/lib/environment-value";
+import { knownCampusResults } from "./catalog";
+import { isInCityArea } from "./city-preference";
 
 type MapTilerFeature = {
   id?: string;
@@ -14,6 +16,7 @@ type MapTilerFeature = {
   bbox?: [number, number, number, number];
   relevance?: number;
   matching_text?: string;
+  properties?: { place_designation?: string };
 };
 
 type MapTilerResponse = { features?: MapTilerFeature[] };
@@ -41,7 +44,7 @@ export function buildMapTilerSearchUrl(
   if (input.kind === "city") {
     url.searchParams.set(
       "types",
-      "municipality,subregion,municipal_district,locality,place",
+      "municipality,subregion,place",
     );
     url.searchParams.set("fuzzyMatch", "false");
   }
@@ -62,9 +65,7 @@ export function buildMapTilerSearchUrl(
 const cityTypePriority: Record<string, number> = {
   municipality: 50,
   subregion: 45,
-  municipal_district: 40,
-  locality: 30,
-  place: 10,
+  place: 30,
 };
 
 function rankCityFeatures(features: MapTilerFeature[], query: string) {
@@ -79,8 +80,10 @@ function rankCityFeatures(features: MapTilerFeature[], query: string) {
 
     return { feature, featureType, originalIndex, score };
   });
-  const administrative = scored.filter(({ featureType }) => featureType !== "place");
-  const candidates = administrative.length > 0 ? administrative : scored;
+  // Some consolidated cities (e.g. New York) are indexed as subregions.
+  // Only accept those additional layers when the provider identifies a city.
+  const candidates = scored.filter(({ feature, featureType }) => featureType === "municipality"
+    || (["subregion", "place"].includes(featureType) && feature.properties?.place_designation === "city"));
 
   return candidates
     .sort((a, b) => b.score - a.score || a.originalIndex - b.originalIndex)
@@ -115,6 +118,8 @@ export async function searchLocations(
   requestOrigin: string,
   fetcher: typeof fetch = fetch,
 ) {
+  const campuses = knownCampusResults(input);
+  if (campuses.length) return campuses;
   const response = await fetcher(buildMapTilerSearchUrl(input, apiKey), {
     headers: {
       Accept: "application/json",
@@ -133,5 +138,11 @@ export async function searchLocations(
     ? rankCityFeatures(data.features ?? [], input.query)
     : data.features ?? [];
 
-  return normalizeMapTilerResults({ features });
+  const results = normalizeMapTilerResults({ features });
+  if (input.kind === "destination" && input.proximity) {
+    const cityArea = { id: "search-area", label: "Search area", shortLabel: "Search area", type: "municipality", coordinates: input.proximity, boundingBox: input.boundingBox };
+    return results.filter((result) => isInCityArea(result.coordinates, cityArea))
+      .sort((a, b) => Math.hypot(a.coordinates.latitude - input.proximity!.latitude, a.coordinates.longitude - input.proximity!.longitude) - Math.hypot(b.coordinates.latitude - input.proximity!.latitude, b.coordinates.longitude - input.proximity!.longitude));
+  }
+  return results;
 }

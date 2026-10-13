@@ -6,6 +6,7 @@ import type {
   ConversationSummary,
 } from "@/features/conversations/types";
 import prisma from "@/lib/prisma";
+import { DEMO_OWNER_EMAIL } from "@/features/listings/demo-data";
 
 type StartConversationInput = { listingId: number; message: string };
 type StartHousingRequestConversationInput = { housingRequestId: number; message: string };
@@ -48,7 +49,7 @@ export async function startConversation(
   seekerId: number,
 ): Promise<StartConversationResult> {
   const listing = await prisma.listing.findFirst({
-    where: { id: input.listingId, status: "active" },
+    where: { id: input.listingId, status: "active", owner: { email: { not: DEMO_OWNER_EMAIL } } },
     select: { ownerId: true },
   });
 

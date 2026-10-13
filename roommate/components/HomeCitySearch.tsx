@@ -5,12 +5,15 @@ import { useState } from "react";
 
 import LocationSearch from "@/components/LocationSearch";
 import type { CityPreference } from "@/features/location-search/city-preference";
+import { cityChoices } from "@/features/location-search/catalog";
 
-type Props = { city: CityPreference };
+type Props = { city: CityPreference; navigateToListings?: boolean };
 
-export default function HomeCitySearch({ city }: Props) {
+export default function HomeCitySearch({ city, navigateToListings = true }: Props) {
   const router = useRouter();
   const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
+  const [searchOther, setSearchOther] = useState(false);
+  const matchingChoice = cityChoices.find((choice) => choice.shortLabel === city.shortLabel);
 
   async function selectCity(nextCity: CityPreference) {
     setStatus("saving");
@@ -27,7 +30,7 @@ export default function HomeCitySearch({ city }: Props) {
       }
 
       setStatus("idle");
-      router.replace("/#listings");
+      if (navigateToListings) router.replace("/#listings");
       router.refresh();
     } catch {
       setStatus("error");
@@ -36,14 +39,26 @@ export default function HomeCitySearch({ city }: Props) {
 
   return (
     <div className="home-city-search">
-      <LocationSearch
+      <label className="city-select-label">
+        <span>Choose your city</span>
+        <select aria-label="Choose your city" disabled={status === "saving"} value={searchOther ? "other" : matchingChoice?.id ?? "current"} onChange={(event) => {
+          if (event.target.value === "other") { setSearchOther(true); return; }
+          const nextCity = cityChoices.find((choice) => choice.id === event.target.value);
+          if (nextCity) { setSearchOther(false); void selectCity(nextCity); }
+        }}>
+          {!matchingChoice && <option value="current">{city.shortLabel}</option>}
+          {cityChoices.map((choice) => <option key={choice.id} value={choice.id}>{choice.shortLabel}, CA</option>)}
+          <option value="other">Search another US city…</option>
+        </select>
+      </label>
+      {searchOther && <LocationSearch
         key={city.id}
         kind="city"
-        label="Where are you headed?"
+        label="Find another city"
         placeholder="Search any US city…"
         value={city.label}
         onSelect={selectCity}
-      />
+      />}
       <p role="status">
         {status === "saving"
           ? "Updating your city…"

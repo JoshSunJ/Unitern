@@ -42,7 +42,10 @@ export function parseCityPreference(value: unknown): CityPreference | null {
   const boundingBox = candidate.boundingBox;
   const hasValidBounds = Array.isArray(boundingBox)
     && boundingBox.length === 4
-    && boundingBox.every((coordinate) => typeof coordinate === "number" && Number.isFinite(coordinate));
+    && boundingBox.every((coordinate) => typeof coordinate === "number" && Number.isFinite(coordinate))
+    && boundingBox[0] >= -180 && boundingBox[2] <= 180
+    && boundingBox[1] >= -90 && boundingBox[3] <= 90
+    && boundingBox[0] < boundingBox[2] && boundingBox[1] < boundingBox[3];
 
   return {
     id: candidate.id.slice(0, 200),
